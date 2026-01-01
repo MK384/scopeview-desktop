@@ -1,11 +1,86 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useState } from 'react';
+import { useWaveformGenerator } from '@/hooks/useWaveformGenerator';
+import { WaveformCanvas } from '@/components/oscilloscope/WaveformCanvas';
+import { ControlPanel } from '@/components/oscilloscope/ControlPanel';
+import { MeasurementPanel } from '@/components/oscilloscope/MeasurementPanel';
+import { StatusBar } from '@/components/oscilloscope/StatusBar';
+
+const DIVISIONS = 10;
 
 const Index = () => {
+  const {
+    waveformData,
+    waveformSettings,
+    setWaveformSettings,
+    timebaseSettings,
+    setTimebaseSettings,
+    isRunning,
+    toggleRunning,
+    resetPhase,
+  } = useWaveformGenerator(DIVISIONS);
+
+  const [voltsPerDivision, setVoltsPerDivision] = useState(1);
+  const [verticalOffset, setVerticalOffset] = useState(0);
+  const [triggerLevel, setTriggerLevel] = useState(0);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background p-4">
+      {/* Header */}
+      <header className="mb-4">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          Digital Oscilloscope
+        </h1>
+        <p className="text-sm text-muted-foreground">1 MS/s Real-time Waveform Display</p>
+      </header>
+
+      {/* Main Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+        {/* Waveform Display Area */}
+        <div className="space-y-4">
+          <StatusBar
+            isRunning={isRunning}
+            sampleRate={timebaseSettings.sampleRate}
+            timePerDivision={timebaseSettings.timePerDivision}
+            voltsPerDivision={voltsPerDivision}
+          />
+          
+          <div className="aspect-[16/9] min-h-[400px]">
+            <WaveformCanvas
+              data={waveformData}
+              divisions={DIVISIONS}
+              voltsPerDivision={voltsPerDivision}
+              verticalOffset={verticalOffset}
+              triggerLevel={triggerLevel}
+              showGrid={true}
+              showTrigger={true}
+            />
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-4">
+          <ControlPanel
+            waveformSettings={waveformSettings}
+            onWaveformChange={setWaveformSettings}
+            timebaseSettings={timebaseSettings}
+            onTimebaseChange={setTimebaseSettings}
+            voltsPerDivision={voltsPerDivision}
+            onVoltsPerDivisionChange={setVoltsPerDivision}
+            verticalOffset={verticalOffset}
+            onVerticalOffsetChange={setVerticalOffset}
+            triggerLevel={triggerLevel}
+            onTriggerLevelChange={setTriggerLevel}
+            isRunning={isRunning}
+            onToggleRunning={toggleRunning}
+            onReset={resetPhase}
+          />
+          
+          <MeasurementPanel
+            data={waveformData}
+            timePerDivision={timebaseSettings.timePerDivision}
+            divisions={DIVISIONS}
+          />
+        </div>
       </div>
     </div>
   );

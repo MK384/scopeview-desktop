@@ -57,6 +57,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Oscilloscope specific colors
+        trace: "hsl(var(--trace))",
+        "trace-glow": "hsl(var(--trace-glow))",
+        trigger: "hsl(var(--trigger))",
+        "oscilloscope-screen": "hsl(var(--oscilloscope-screen))",
       },
       borderRadius: {
         lg: "var(--radius)",
