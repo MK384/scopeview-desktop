@@ -80,40 +80,43 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
     <div className="bg-card border border-border rounded-lg p-4">
       <h3 className="text-sm font-semibold text-accent uppercase tracking-wide mb-4">Measurements</h3>
       
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">V max</span>
-          <p className="font-mono text-primary">{formatValue(measurements.vMax, 'V')}</p>
+      <div className="grid grid-cols-3 gap-4 text-sm">
+        {/* Column 1: Voltage Min/Max */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">V min</span>
+            <p className="font-mono text-primary">{formatValue(measurements.vMin, 'V')}</p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">V max</span>
+            <p className="font-mono text-primary">{formatValue(measurements.vMax, 'V')}</p>
+          </div>
         </div>
-        
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">V min</span>
-          <p className="font-mono text-primary">{formatValue(measurements.vMin, 'V')}</p>
+
+        {/* Column 2: V p-p / V rms */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">V p-p</span>
+            <p className="font-mono text-trace">{formatValue(measurements.vPP, 'V')}</p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">V rms</span>
+            <p className="font-mono text-trace">{formatValue(measurements.vRMS, 'V')}</p>
+          </div>
         </div>
-        
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">V p-p</span>
-          <p className="font-mono text-trace">{formatValue(measurements.vPP, 'V')}</p>
-        </div>
-        
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">V rms</span>
-          <p className="font-mono text-trace">{formatValue(measurements.vRMS, 'V')}</p>
-        </div>
-        
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">Frequency</span>
-          <p className="font-mono text-accent">{formatValue(measurements.frequency, 'Hz')}</p>
-        </div>
-        
-        <div className="space-y-1">
-          <span className="text-muted-foreground text-xs">Period</span>
-          <p className="font-mono text-accent">{formatValue(measurements.period, 's')}</p>
-        </div>
-        
-        <div className="col-span-2 space-y-1">
-          <span className="text-muted-foreground text-xs">Duty Cycle</span>
-          <p className="font-mono text-foreground">{measurements.dutyCycle.toFixed(1)}%</p>
+
+        {/* Column 3: Frequency / Period / Duty Cycle */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">Frequency (Duty Cycle)</span>
+            <p className="font-mono text-accent">
+              {formatValue(measurements.frequency, 'Hz')} ({measurements.dutyCycle.toFixed(1)}%)
+            </p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">Period</span>
+            <p className="font-mono text-accent">{formatValue(measurements.period, 's')}</p>
+          </div>
         </div>
       </div>
     </div>
