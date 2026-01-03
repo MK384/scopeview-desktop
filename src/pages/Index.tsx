@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useWaveformGenerator } from '@/hooks/useWaveformGenerator';
 import { WaveformCanvas } from '@/components/oscilloscope/WaveformCanvas';
 import { ControlPanel } from '@/components/oscilloscope/ControlPanel';
+import { SignalGenPanel } from '@/components/oscilloscope/SignalGenPanel';
 import { MeasurementPanel } from '@/components/oscilloscope/MeasurementPanel';
 import { StatusBar } from '@/components/oscilloscope/StatusBar';
 
@@ -66,8 +67,6 @@ const Index = () => {
         {/* Right Sidebar */}
         <div className="space-y-4">
           <ControlPanel
-            waveformSettings={waveformSettings}
-            onWaveformChange={setWaveformSettings}
             timebaseSettings={timebaseSettings}
             onTimebaseChange={setTimebaseSettings}
             voltsPerDivision={voltsPerDivision}
@@ -79,6 +78,11 @@ const Index = () => {
             isRunning={isRunning}
             onToggleRunning={toggleRunning}
             onReset={resetPhase}
+          />
+
+          <SignalGenPanel
+            waveformSettings={waveformSettings}
+            onWaveformChange={setWaveformSettings}
           />
         </div>
       </div>
