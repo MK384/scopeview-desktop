@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
+import type { CursorSettings } from './CursorPanel';
 
 interface WaveformCanvasProps {
   data: number[];
@@ -9,6 +10,8 @@ interface WaveformCanvasProps {
   showGrid: boolean;
   showTrigger: boolean;
   traceColor?: string;
+  cursorSettings?: CursorSettings;
+  timePerDivision?: number;
 }
 
 export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
@@ -20,6 +23,8 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   showGrid = true,
   showTrigger = true,
   traceColor = '#00ff88',
+  cursorSettings,
+  timePerDivision = 0.001,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -142,6 +147,85 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.shadowBlur = 0;
   }, [data, voltsPerDivision, divisions, verticalOffset, traceColor]);
 
+  const drawCursors = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    if (!cursorSettings?.enabled) return;
+
+    const totalTime = timePerDivision * divisions;
+    const totalVolts = voltsPerDivision * divisions;
+
+    // Time cursor colors (cyan)
+    const timeCursorColor1 = 'rgba(34, 211, 238, 0.9)';
+    const timeCursorColor2 = 'rgba(34, 211, 238, 0.6)';
+
+    // Voltage cursor colors (pink)
+    const voltCursorColor1 = 'rgba(244, 114, 182, 0.9)';
+    const voltCursorColor2 = 'rgba(244, 114, 182, 0.6)';
+
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+
+    // Draw vertical cursors (time)
+    const x1 = cursorSettings.x1 * width;
+    const x2 = cursorSettings.x2 * width;
+
+    ctx.strokeStyle = timeCursorColor1;
+    ctx.beginPath();
+    ctx.moveTo(x1, 0);
+    ctx.lineTo(x1, height);
+    ctx.stroke();
+
+    ctx.strokeStyle = timeCursorColor2;
+    ctx.beginPath();
+    ctx.moveTo(x2, 0);
+    ctx.lineTo(x2, height);
+    ctx.stroke();
+
+    // Draw horizontal cursors (voltage)
+    const y1 = cursorSettings.y1 * height;
+    const y2 = cursorSettings.y2 * height;
+
+    ctx.strokeStyle = voltCursorColor1;
+    ctx.beginPath();
+    ctx.moveTo(0, y1);
+    ctx.lineTo(width, y1);
+    ctx.stroke();
+
+    ctx.strokeStyle = voltCursorColor2;
+    ctx.beginPath();
+    ctx.moveTo(0, y2);
+    ctx.lineTo(width, y2);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    // Draw labels
+    ctx.font = '11px monospace';
+    
+    // T1 label
+    ctx.fillStyle = timeCursorColor1;
+    ctx.fillText('T1', x1 + 4, 14);
+    
+    // T2 label
+    ctx.fillStyle = timeCursorColor2;
+    ctx.fillText('T2', x2 + 4, 28);
+    
+    // V1 label
+    ctx.fillStyle = voltCursorColor1;
+    ctx.fillText('V1', width - 24, y1 - 4);
+    
+    // V2 label
+    ctx.fillStyle = voltCursorColor2;
+    ctx.fillText('V2', width - 24, y2 - 4);
+
+    // Draw delta shading
+    ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
+    ctx.fillRect(Math.min(x1, x2), 0, Math.abs(x2 - x1), height);
+
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.05)';
+    ctx.fillRect(0, Math.min(y1, y2), width, Math.abs(y2 - y1));
+
+  }, [cursorSettings, timePerDivision, voltsPerDivision, divisions]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -196,7 +280,8 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     }
 
     drawWaveform(ctx, width, height);
-  }, [data, showGrid, showTrigger, drawGrid, drawTriggerLevel, drawWaveform]);
+    drawCursors(ctx, width, height);
+  }, [data, showGrid, showTrigger, cursorSettings, drawGrid, drawTriggerLevel, drawWaveform, drawCursors]);
 
   return (
     <div 
