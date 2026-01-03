@@ -55,6 +55,12 @@ const Index = () => {
               showTrigger={true}
             />
           </div>
+
+          <MeasurementPanel
+            data={waveformData}
+            timePerDivision={timebaseSettings.timePerDivision}
+            divisions={DIVISIONS}
+          />
         </div>
 
         {/* Right Sidebar */}
@@ -73,12 +79,6 @@ const Index = () => {
             isRunning={isRunning}
             onToggleRunning={toggleRunning}
             onReset={resetPhase}
-          />
-          
-          <MeasurementPanel
-            data={waveformData}
-            timePerDivision={timebaseSettings.timePerDivision}
-            divisions={DIVISIONS}
           />
         </div>
       </div>
