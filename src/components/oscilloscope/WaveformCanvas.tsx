@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import type { CursorSettings } from './CursorPanel';
+import type { TriggerEdge } from '@/hooks/useWaveformGenerator';
 
 interface WaveformCanvasProps {
   data: number[];
@@ -13,6 +14,7 @@ interface WaveformCanvasProps {
   cursorSettings?: CursorSettings;
   onCursorChange?: (settings: CursorSettings) => void;
   timePerDivision?: number;
+  triggerEdge?: TriggerEdge;
 }
 
 type DragTarget = 'x1' | 'x2' | 'y1' | 'y2' | null;
@@ -40,6 +42,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   cursorSettings,
   onCursorChange,
   timePerDivision = 0.001,
+  triggerEdge = 'rising',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -204,15 +207,34 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
     ctx.setLineDash([]);
 
-    // Trigger marker
+    // Trigger marker with edge direction indicator
     ctx.fillStyle = 'rgba(255, 200, 0, 0.9)';
     ctx.beginPath();
     ctx.moveTo(0, triggerY);
-    ctx.lineTo(10, triggerY - 5);
-    ctx.lineTo(10, triggerY + 5);
+    ctx.lineTo(12, triggerY - 6);
+    ctx.lineTo(12, triggerY + 6);
     ctx.closePath();
     ctx.fill();
-  }, [triggerLevel, verticalOffset, voltsPerDivision, divisions]);
+
+    // Edge direction arrow
+    ctx.strokeStyle = 'rgba(255, 200, 0, 1)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (triggerEdge === 'rising') {
+      ctx.moveTo(16, triggerY + 8);
+      ctx.lineTo(16, triggerY - 8);
+      ctx.moveTo(12, triggerY - 4);
+      ctx.lineTo(16, triggerY - 8);
+      ctx.lineTo(20, triggerY - 4);
+    } else {
+      ctx.moveTo(16, triggerY - 8);
+      ctx.lineTo(16, triggerY + 8);
+      ctx.moveTo(12, triggerY + 4);
+      ctx.lineTo(16, triggerY + 8);
+      ctx.lineTo(20, triggerY + 4);
+    }
+    ctx.stroke();
+  }, [triggerLevel, verticalOffset, voltsPerDivision, divisions, triggerEdge]);
 
   const drawWaveform = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (data.length === 0) return;

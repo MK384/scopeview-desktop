@@ -1,11 +1,14 @@
 import React from 'react';
-import { Activity, Zap } from 'lucide-react';
+import { Activity, Zap, Target } from 'lucide-react';
+import type { TriggerMode } from '@/hooks/useWaveformGenerator';
 
 interface StatusBarProps {
   isRunning: boolean;
   sampleRate: number;
   timePerDivision: number;
   voltsPerDivision: number;
+  triggerMode?: TriggerMode;
+  isTriggered?: boolean;
 }
 
 const formatTime = (seconds: number): string => {
@@ -26,6 +29,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   sampleRate,
   timePerDivision,
   voltsPerDivision,
+  triggerMode = 'auto',
+  isTriggered = false,
 }) => {
   return (
     <div className="bg-card/80 backdrop-blur border border-border rounded-lg px-4 py-2 flex items-center justify-between text-sm">
@@ -43,6 +48,18 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <Zap className="w-4 h-4 text-accent" />
           <span className="text-muted-foreground">
             <span className="text-foreground font-mono">{formatSampleRate(sampleRate)}</span>
+          </span>
+        </div>
+
+        <div className="h-4 w-px bg-border" />
+
+        <div className="flex items-center gap-2">
+          <Target className={`w-4 h-4 ${isTriggered ? 'text-green-500' : 'text-yellow-500'}`} />
+          <span className="text-muted-foreground">
+            <span className="text-foreground font-mono uppercase">{triggerMode}</span>
+            <span className={`ml-2 text-xs ${isTriggered ? 'text-green-500' : 'text-yellow-500'}`}>
+              {isTriggered ? 'Trig\'d' : 'Wait'}
+            </span>
           </span>
         </div>
       </div>
