@@ -41,9 +41,9 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="h-screen bg-background p-4 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="mb-4">
+      <header className="mb-4 flex-shrink-0">
         <h1 className="text-2xl font-bold text-foreground tracking-tight">
           Digital Oscilloscope
         </h1>
@@ -51,7 +51,7 @@ const Index = () => {
       </header>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 flex-1 min-h-0">
         {/* Waveform Display Area */}
         <div className="space-y-4">
           <StatusBar
@@ -87,7 +87,7 @@ const Index = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto min-h-0">
           <ControlPanel
             timebaseSettings={timebaseSettings}
             onTimebaseChange={setTimebaseSettings}
