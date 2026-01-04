@@ -5,6 +5,7 @@ import { ControlPanel } from '@/components/oscilloscope/ControlPanel';
 import { SignalGenPanel } from '@/components/oscilloscope/SignalGenPanel';
 import { MeasurementPanel } from '@/components/oscilloscope/MeasurementPanel';
 import { CursorPanel, type CursorSettings } from '@/components/oscilloscope/CursorPanel';
+import { TriggerPanel } from '@/components/oscilloscope/TriggerPanel';
 import { StatusBar } from '@/components/oscilloscope/StatusBar';
 
 const DIVISIONS = 10;
@@ -94,14 +95,9 @@ const Index = () => {
             onVoltsPerDivisionChange={setVoltsPerDivision}
             verticalOffset={verticalOffset}
             onVerticalOffsetChange={setVerticalOffset}
-            triggerSettings={triggerSettings}
-            onTriggerSettingsChange={setTriggerSettings}
             isRunning={isRunning}
-            isTriggered={isTriggered}
-            triggerArmed={triggerArmed}
             onToggleRunning={toggleRunning}
             onReset={resetPhase}
-            onArmTrigger={armTrigger}
           />
 
           <CursorPanel
@@ -110,6 +106,15 @@ const Index = () => {
             timePerDivision={timebaseSettings.timePerDivision}
             voltsPerDivision={voltsPerDivision}
             divisions={DIVISIONS}
+          />
+
+          <TriggerPanel
+            triggerSettings={triggerSettings}
+            onTriggerSettingsChange={setTriggerSettings}
+            isTriggered={isTriggered}
+            triggerArmed={triggerArmed}
+            onArmTrigger={armTrigger}
+            isRunning={isRunning}
           />
 
           <SignalGenPanel
