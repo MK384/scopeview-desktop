@@ -16,14 +16,18 @@ const Index = () => {
     setWaveformSettings,
     timebaseSettings,
     setTimebaseSettings,
+    triggerSettings,
+    setTriggerSettings,
     isRunning,
+    isTriggered,
+    triggerArmed,
     toggleRunning,
     resetPhase,
+    armTrigger,
   } = useWaveformGenerator(DIVISIONS);
 
   const [voltsPerDivision, setVoltsPerDivision] = useState(1);
   const [verticalOffset, setVerticalOffset] = useState(0);
-  const [triggerLevel, setTriggerLevel] = useState(0);
   const [cursorSettings, setCursorSettings] = useState<CursorSettings>({
     enabled: false,
     showVertical: true,
@@ -54,6 +58,8 @@ const Index = () => {
             sampleRate={timebaseSettings.sampleRate}
             timePerDivision={timebaseSettings.timePerDivision}
             voltsPerDivision={voltsPerDivision}
+            triggerMode={triggerSettings.mode}
+            isTriggered={isTriggered}
           />
           
           <div className="aspect-[16/9] min-h-[400px]">
@@ -62,12 +68,13 @@ const Index = () => {
               divisions={DIVISIONS}
               voltsPerDivision={voltsPerDivision}
               verticalOffset={verticalOffset}
-              triggerLevel={triggerLevel}
+              triggerLevel={triggerSettings.level}
               showGrid={true}
               showTrigger={true}
               cursorSettings={cursorSettings}
               onCursorChange={setCursorSettings}
               timePerDivision={timebaseSettings.timePerDivision}
+              triggerEdge={triggerSettings.edge}
             />
           </div>
 
@@ -87,11 +94,14 @@ const Index = () => {
             onVoltsPerDivisionChange={setVoltsPerDivision}
             verticalOffset={verticalOffset}
             onVerticalOffsetChange={setVerticalOffset}
-            triggerLevel={triggerLevel}
-            onTriggerLevelChange={setTriggerLevel}
+            triggerSettings={triggerSettings}
+            onTriggerSettingsChange={setTriggerSettings}
             isRunning={isRunning}
+            isTriggered={isTriggered}
+            triggerArmed={triggerArmed}
             onToggleRunning={toggleRunning}
             onReset={resetPhase}
+            onArmTrigger={armTrigger}
           />
 
           <CursorPanel
