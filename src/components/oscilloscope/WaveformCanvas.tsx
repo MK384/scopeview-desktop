@@ -17,6 +17,17 @@ interface WaveformCanvasProps {
 
 type DragTarget = 'x1' | 'x2' | 'y1' | 'y2' | null;
 
+const formatTime = (seconds: number): string => {
+  if (Math.abs(seconds) >= 1) return `${seconds.toFixed(2)}s`;
+  if (Math.abs(seconds) >= 0.001) return `${(seconds * 1000).toFixed(2)}ms`;
+  return `${(seconds * 1000000).toFixed(2)}µs`;
+};
+
+const formatVoltage = (volts: number): string => {
+  if (Math.abs(volts) >= 1) return `${volts.toFixed(2)}V`;
+  return `${(volts * 1000).toFixed(2)}mV`;
+};
+
 export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   data,
   divisions,
@@ -35,7 +46,89 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   const [dragTarget, setDragTarget] = useState<DragTarget>(null);
   const [hoveredCursor, setHoveredCursor] = useState<DragTarget>(null);
 
-  const DRAG_THRESHOLD = 10; // pixels for hit detection
+  const DRAG_THRESHOLD = 10;
+  const SNAP_RADIUS = 15; // pixels for snap detection
+
+  // Find peaks and valleys in waveform data
+  const findPeaksAndValleys = useCallback((data: number[]): { peaks: number[]; valleys: number[] } => {
+    const peaks: number[] = [];
+    const valleys: number[] = [];
+    
+    for (let i = 1; i < data.length - 1; i++) {
+      if (data[i] > data[i - 1] && data[i] > data[i + 1]) {
+        peaks.push(i);
+      } else if (data[i] < data[i - 1] && data[i] < data[i + 1]) {
+        valleys.push(i);
+      }
+    }
+    
+    return { peaks, valleys };
+  }, []);
+
+  // Snap to nearest peak or valley
+  const snapToWaveform = useCallback((normalizedX: number, width: number): number => {
+    if (data.length === 0) return normalizedX;
+    
+    const { peaks, valleys } = findPeaksAndValleys(data);
+    const allPoints = [...peaks, ...valleys];
+    
+    const mouseXPixel = normalizedX * width;
+    const pixelsPerPoint = width / data.length;
+    
+    let closestPoint = -1;
+    let closestDistance = Infinity;
+    
+    for (const pointIndex of allPoints) {
+      const pointXPixel = pointIndex * pixelsPerPoint;
+      const distance = Math.abs(mouseXPixel - pointXPixel);
+      
+      if (distance < closestDistance && distance < SNAP_RADIUS) {
+        closestDistance = distance;
+        closestPoint = pointIndex;
+      }
+    }
+    
+    if (closestPoint >= 0) {
+      return closestPoint / data.length;
+    }
+    
+    return normalizedX;
+  }, [data, findPeaksAndValleys, SNAP_RADIUS]);
+
+  // Snap horizontal cursor to waveform voltage
+  const snapToWaveformVoltage = useCallback((normalizedY: number, height: number): number => {
+    if (data.length === 0) return normalizedY;
+    
+    const voltsRange = voltsPerDivision * divisions;
+    const centerY = height / 2;
+    const pixelsPerVolt = height / voltsRange;
+    
+    // Get all unique voltage values from peaks and valleys
+    const { peaks, valleys } = findPeaksAndValleys(data);
+    const significantPoints = [...peaks, ...valleys];
+    
+    const mouseYPixel = normalizedY * height;
+    
+    let closestY = -1;
+    let closestDistance = Infinity;
+    
+    for (const pointIndex of significantPoints) {
+      const voltage = data[pointIndex];
+      const yPixel = centerY - (voltage + verticalOffset) * pixelsPerVolt;
+      const distance = Math.abs(mouseYPixel - yPixel);
+      
+      if (distance < closestDistance && distance < SNAP_RADIUS) {
+        closestDistance = distance;
+        closestY = yPixel / height;
+      }
+    }
+    
+    if (closestY >= 0) {
+      return closestY;
+    }
+    
+    return normalizedY;
+  }, [data, voltsPerDivision, divisions, verticalOffset, findPeaksAndValleys, SNAP_RADIUS]);
 
   const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridColor = 'rgba(100, 100, 100, 0.4)';
@@ -158,21 +251,23 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   const drawCursors = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!cursorSettings?.enabled) return;
 
-    // Time cursor colors (cyan)
     const timeCursorColor1 = hoveredCursor === 'x1' ? 'rgba(34, 211, 238, 1)' : 'rgba(34, 211, 238, 0.9)';
     const timeCursorColor2 = hoveredCursor === 'x2' ? 'rgba(34, 211, 238, 0.85)' : 'rgba(34, 211, 238, 0.6)';
-
-    // Voltage cursor colors (pink)
     const voltCursorColor1 = hoveredCursor === 'y1' ? 'rgba(244, 114, 182, 1)' : 'rgba(244, 114, 182, 0.9)';
     const voltCursorColor2 = hoveredCursor === 'y2' ? 'rgba(244, 114, 182, 0.85)' : 'rgba(244, 114, 182, 0.6)';
 
-    ctx.lineWidth = hoveredCursor ? 2 : 1;
+    const totalTime = timePerDivision * divisions;
+    const voltsRange = voltsPerDivision * divisions;
+
     ctx.setLineDash([4, 4]);
 
     // Draw vertical cursors (time)
     if (cursorSettings.showVertical) {
       const x1 = cursorSettings.x1 * width;
       const x2 = cursorSettings.x2 * width;
+      const t1 = cursorSettings.x1 * totalTime;
+      const t2 = cursorSettings.x2 * totalTime;
+      const deltaT = Math.abs(t2 - t1);
 
       ctx.strokeStyle = timeCursorColor1;
       ctx.lineWidth = hoveredCursor === 'x1' ? 2.5 : 1.5;
@@ -188,7 +283,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.lineTo(x2, height);
       ctx.stroke();
 
-      // Draw drag handles for vertical cursors
+      // Drag handles
       ctx.setLineDash([]);
       ctx.fillStyle = timeCursorColor1;
       ctx.beginPath();
@@ -200,12 +295,50 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.arc(x2, 20, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Labels
-      ctx.font = '11px monospace';
+      // T1 and T2 labels with values
+      ctx.font = 'bold 11px monospace';
       ctx.fillStyle = timeCursorColor1;
-      ctx.fillText('T1', x1 + 10, 24);
+      ctx.fillText(`T1: ${formatTime(t1)}`, x1 + 10, 40);
       ctx.fillStyle = timeCursorColor2;
-      ctx.fillText('T2', x2 + 10, 24);
+      ctx.fillText(`T2: ${formatTime(t2)}`, x2 + 10, 40);
+
+      // Delta T line (grey dashed horizontal line between cursors)
+      const deltaY = height * 0.85;
+      ctx.strokeStyle = 'rgba(150, 150, 150, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(Math.min(x1, x2), deltaY);
+      ctx.lineTo(Math.max(x1, x2), deltaY);
+      ctx.stroke();
+
+      // Arrow heads
+      ctx.setLineDash([]);
+      const arrowSize = 5;
+      const minX = Math.min(x1, x2);
+      const maxX = Math.max(x1, x2);
+      
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.9)';
+      ctx.beginPath();
+      ctx.moveTo(minX, deltaY);
+      ctx.lineTo(minX + arrowSize, deltaY - arrowSize);
+      ctx.lineTo(minX + arrowSize, deltaY + arrowSize);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(maxX, deltaY);
+      ctx.lineTo(maxX - arrowSize, deltaY - arrowSize);
+      ctx.lineTo(maxX - arrowSize, deltaY + arrowSize);
+      ctx.closePath();
+      ctx.fill();
+
+      // ΔT label
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+      const deltaTText = `ΔT: ${formatTime(deltaT)}`;
+      const deltaTWidth = ctx.measureText(deltaTText).width;
+      ctx.fillText(deltaTText, (minX + maxX) / 2 - deltaTWidth / 2, deltaY - 8);
 
       // Delta shading
       ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
@@ -218,6 +351,9 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     if (cursorSettings.showHorizontal) {
       const y1 = cursorSettings.y1 * height;
       const y2 = cursorSettings.y2 * height;
+      const v1 = (0.5 - cursorSettings.y1) * voltsRange;
+      const v2 = (0.5 - cursorSettings.y2) * voltsRange;
+      const deltaV = Math.abs(v2 - v1);
 
       ctx.strokeStyle = voltCursorColor1;
       ctx.lineWidth = hoveredCursor === 'y1' ? 2.5 : 1.5;
@@ -233,7 +369,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.lineTo(width, y2);
       ctx.stroke();
 
-      // Draw drag handles for horizontal cursors
+      // Drag handles
       ctx.setLineDash([]);
       ctx.fillStyle = voltCursorColor1;
       ctx.beginPath();
@@ -245,12 +381,52 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.arc(width - 20, y2, 6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Labels
-      ctx.font = '11px monospace';
+      // V1 and V2 labels with values
+      ctx.font = 'bold 11px monospace';
       ctx.fillStyle = voltCursorColor1;
-      ctx.fillText('V1', width - 44, y1 - 8);
+      ctx.fillText(`V1: ${formatVoltage(v1)}`, 10, y1 - 8);
       ctx.fillStyle = voltCursorColor2;
-      ctx.fillText('V2', width - 44, y2 - 8);
+      ctx.fillText(`V2: ${formatVoltage(v2)}`, 10, y2 - 8);
+
+      // Delta V line (grey dashed vertical line between cursors)
+      const deltaX = width * 0.15;
+      ctx.strokeStyle = 'rgba(150, 150, 150, 0.8)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(deltaX, Math.min(y1, y2));
+      ctx.lineTo(deltaX, Math.max(y1, y2));
+      ctx.stroke();
+
+      // Arrow heads
+      ctx.setLineDash([]);
+      const arrowSize = 5;
+      const minY = Math.min(y1, y2);
+      const maxY = Math.max(y1, y2);
+      
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.9)';
+      ctx.beginPath();
+      ctx.moveTo(deltaX, minY);
+      ctx.lineTo(deltaX - arrowSize, minY + arrowSize);
+      ctx.lineTo(deltaX + arrowSize, minY + arrowSize);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo(deltaX, maxY);
+      ctx.lineTo(deltaX - arrowSize, maxY - arrowSize);
+      ctx.lineTo(deltaX + arrowSize, maxY - arrowSize);
+      ctx.closePath();
+      ctx.fill();
+
+      // ΔV label
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+      const deltaVText = `ΔV: ${formatVoltage(deltaV)}`;
+      ctx.save();
+      ctx.translate(deltaX + 12, (minY + maxY) / 2);
+      ctx.fillText(deltaVText, 0, 0);
+      ctx.restore();
 
       // Delta shading
       ctx.fillStyle = 'rgba(244, 114, 182, 0.05)';
@@ -258,7 +434,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     }
 
     ctx.setLineDash([]);
-  }, [cursorSettings, hoveredCursor]);
+  }, [cursorSettings, hoveredCursor, timePerDivision, divisions, voltsPerDivision]);
 
   const findCursorAtPosition = useCallback((mouseX: number, mouseY: number, width: number, height: number): DragTarget => {
     if (!cursorSettings?.enabled) return null;
@@ -308,24 +484,26 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     const mouseY = e.clientY - rect.top;
 
     if (dragTarget && onCursorChange) {
-      // Update cursor position while dragging
       const newSettings = { ...cursorSettings };
       
       if (dragTarget === 'x1' || dragTarget === 'x2') {
-        const normalizedX = Math.max(0, Math.min(1, mouseX / rect.width));
+        let normalizedX = Math.max(0, Math.min(1, mouseX / rect.width));
+        // Snap to waveform peaks/valleys
+        normalizedX = snapToWaveform(normalizedX, rect.width);
         newSettings[dragTarget] = normalizedX;
       } else if (dragTarget === 'y1' || dragTarget === 'y2') {
-        const normalizedY = Math.max(0, Math.min(1, mouseY / rect.height));
+        let normalizedY = Math.max(0, Math.min(1, mouseY / rect.height));
+        // Snap to waveform voltage levels
+        normalizedY = snapToWaveformVoltage(normalizedY, rect.height);
         newSettings[dragTarget] = normalizedY;
       }
 
       onCursorChange(newSettings);
     } else {
-      // Update hover state
       const target = findCursorAtPosition(mouseX, mouseY, rect.width, rect.height);
       setHoveredCursor(target);
     }
-  }, [cursorSettings, dragTarget, onCursorChange, findCursorAtPosition]);
+  }, [cursorSettings, dragTarget, onCursorChange, findCursorAtPosition, snapToWaveform, snapToWaveformVoltage]);
 
   const handleMouseUp = useCallback(() => {
     setDragTarget(null);
