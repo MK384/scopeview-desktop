@@ -87,7 +87,7 @@ const Index = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-4 overflow-y-auto min-h-0">
+        <div className="space-y-4 overflow-y-auto min-h-0 custom-scrollbar">
           <ControlPanel
             timebaseSettings={timebaseSettings}
             onTimebaseChange={setTimebaseSettings}
