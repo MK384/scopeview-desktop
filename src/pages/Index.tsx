@@ -10,11 +10,20 @@ import { StatusBar } from '@/components/oscilloscope/StatusBar';
 
 const DIVISIONS = 10;
 
+// Trace colors from design system
+const CH1_TRACE_COLOR = 'hsl(150, 85%, 50%)';
+const CH1_GLOW_COLOR = 'hsl(150, 85%, 60%)';
+const CH2_TRACE_COLOR = 'hsl(45, 95%, 55%)';
+const CH2_GLOW_COLOR = 'hsl(45, 95%, 65%)';
+
 const Index = () => {
   const {
-    waveformData,
-    waveformSettings,
-    setWaveformSettings,
+    waveformDataCh1,
+    waveformDataCh2,
+    channel1,
+    setChannel1,
+    channel2,
+    setChannel2,
     timebaseSettings,
     setTimebaseSettings,
     triggerSettings,
@@ -27,8 +36,6 @@ const Index = () => {
     armTrigger,
   } = useWaveformGenerator(DIVISIONS);
 
-  const [voltsPerDivision, setVoltsPerDivision] = useState(1);
-  const [verticalOffset, setVerticalOffset] = useState(0);
   const [cursorSettings, setCursorSettings] = useState<CursorSettings>({
     enabled: false,
     showVertical: true,
@@ -58,17 +65,26 @@ const Index = () => {
             isRunning={isRunning}
             sampleRate={timebaseSettings.sampleRate}
             timePerDivision={timebaseSettings.timePerDivision}
-            voltsPerDivision={voltsPerDivision}
+            voltsPerDivision={channel1.voltsPerDivision}
             triggerMode={triggerSettings.mode}
             isTriggered={isTriggered}
           />
           
           <div className="aspect-[16/9] min-h-[400px]">
             <WaveformCanvas
-              data={waveformData}
+              channel1Data={{
+                data: waveformDataCh1,
+                settings: channel1,
+                traceColor: CH1_TRACE_COLOR,
+                glowColor: CH1_GLOW_COLOR,
+              }}
+              channel2Data={{
+                data: waveformDataCh2,
+                settings: channel2,
+                traceColor: CH2_TRACE_COLOR,
+                glowColor: CH2_GLOW_COLOR,
+              }}
               divisions={DIVISIONS}
-              voltsPerDivision={voltsPerDivision}
-              verticalOffset={verticalOffset}
               triggerLevel={triggerSettings.level}
               showGrid={true}
               showTrigger={true}
@@ -76,11 +92,12 @@ const Index = () => {
               onCursorChange={setCursorSettings}
               timePerDivision={timebaseSettings.timePerDivision}
               triggerEdge={triggerSettings.edge}
+              triggerSource={triggerSettings.source}
             />
           </div>
 
           <MeasurementPanel
-            data={waveformData}
+            data={waveformDataCh1}
             timePerDivision={timebaseSettings.timePerDivision}
             divisions={DIVISIONS}
           />
@@ -91,10 +108,10 @@ const Index = () => {
           <ControlPanel
             timebaseSettings={timebaseSettings}
             onTimebaseChange={setTimebaseSettings}
-            voltsPerDivision={voltsPerDivision}
-            onVoltsPerDivisionChange={setVoltsPerDivision}
-            verticalOffset={verticalOffset}
-            onVerticalOffsetChange={setVerticalOffset}
+            channel1={channel1}
+            onChannel1Change={setChannel1}
+            channel2={channel2}
+            onChannel2Change={setChannel2}
             isRunning={isRunning}
             onToggleRunning={toggleRunning}
             onReset={resetPhase}
@@ -104,7 +121,7 @@ const Index = () => {
             cursorSettings={cursorSettings}
             onCursorChange={setCursorSettings}
             timePerDivision={timebaseSettings.timePerDivision}
-            voltsPerDivision={voltsPerDivision}
+            voltsPerDivision={channel1.voltsPerDivision}
             divisions={DIVISIONS}
           />
 
@@ -115,11 +132,15 @@ const Index = () => {
             triggerArmed={triggerArmed}
             onArmTrigger={armTrigger}
             isRunning={isRunning}
+            channel1={channel1}
+            channel2={channel2}
           />
 
           <SignalGenPanel
-            waveformSettings={waveformSettings}
-            onWaveformChange={setWaveformSettings}
+            channel1={channel1}
+            onChannel1Change={setChannel1}
+            channel2={channel2}
+            onChannel2Change={setChannel2}
           />
         </div>
       </div>

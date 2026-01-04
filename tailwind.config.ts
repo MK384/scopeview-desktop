@@ -60,6 +60,8 @@ export default {
         // Oscilloscope specific colors
         trace: "hsl(var(--trace))",
         "trace-glow": "hsl(var(--trace-glow))",
+        "trace-ch2": "hsl(var(--trace-ch2))",
+        "trace-ch2-glow": "hsl(var(--trace-ch2-glow))",
         trigger: "hsl(var(--trigger))",
         "oscilloscope-screen": "hsl(var(--oscilloscope-screen))",
       },

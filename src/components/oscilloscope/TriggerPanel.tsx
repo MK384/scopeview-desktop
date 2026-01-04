@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Crosshair } from 'lucide-react';
-import type { TriggerSettings, TriggerMode } from '@/hooks/useWaveformGenerator';
+import type { TriggerSettings, TriggerMode, TriggerSource, ChannelSettings } from '@/hooks/useWaveformGenerator';
 
 interface TriggerPanelProps {
   triggerSettings: TriggerSettings;
@@ -14,6 +14,8 @@ interface TriggerPanelProps {
   triggerArmed: boolean;
   onArmTrigger: () => void;
   isRunning: boolean;
+  channel1: ChannelSettings;
+  channel2: ChannelSettings;
 }
 
 const HOLDOFF_OPTIONS = [
@@ -33,6 +35,8 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
   triggerArmed,
   onArmTrigger,
   isRunning,
+  channel1,
+  channel2,
 }) => {
   const handleLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -65,6 +69,31 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
           <span className="text-xs text-muted-foreground">
             {isTriggered ? 'Trig\'d' : triggerArmed ? 'Armed' : 'Stopped'}
           </span>
+        </div>
+      </div>
+
+      {/* Source Selection */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Source</Label>
+        <div className="grid grid-cols-2 gap-1">
+          <Button
+            variant={triggerSettings.source === 'ch1' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs"
+            onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch1' })}
+            disabled={!channel1.enabled}
+          >
+            CH1
+          </Button>
+          <Button
+            variant={triggerSettings.source === 'ch2' ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs"
+            onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch2' })}
+            disabled={!channel2.enabled}
+          >
+            CH2
+          </Button>
         </div>
       </div>
 

@@ -1,20 +1,26 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import type { CursorSettings } from './CursorPanel';
-import type { TriggerEdge } from '@/hooks/useWaveformGenerator';
+import type { TriggerEdge, ChannelSettings } from '@/hooks/useWaveformGenerator';
+
+interface ChannelData {
+  data: number[];
+  settings: ChannelSettings;
+  traceColor: string;
+  glowColor: string;
+}
 
 interface WaveformCanvasProps {
-  data: number[];
+  channel1Data: ChannelData;
+  channel2Data: ChannelData;
   divisions: number;
-  voltsPerDivision: number;
-  verticalOffset: number;
   triggerLevel: number;
   showGrid: boolean;
   showTrigger: boolean;
-  traceColor?: string;
   cursorSettings?: CursorSettings;
   onCursorChange?: (settings: CursorSettings) => void;
   timePerDivision?: number;
   triggerEdge?: TriggerEdge;
+  triggerSource?: 'ch1' | 'ch2';
 }
 
 type DragTarget = 'x1' | 'x2' | 'y1' | 'y2' | null;
@@ -31,18 +37,17 @@ const formatVoltage = (volts: number): string => {
 };
 
 export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
-  data,
+  channel1Data,
+  channel2Data,
   divisions,
-  voltsPerDivision,
-  verticalOffset,
   triggerLevel,
   showGrid = true,
   showTrigger = true,
-  traceColor = '#00ff88',
   cursorSettings,
   onCursorChange,
   timePerDivision = 0.001,
   triggerEdge = 'rising',
+  triggerSource = 'ch1',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,6 +56,12 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
   const DRAG_THRESHOLD = 10;
   const SNAP_RADIUS = 15; // pixels for snap detection
+
+  // Use active channel for cursor snapping
+  const activeChannelData = channel1Data.settings.enabled ? channel1Data : channel2Data;
+  const data = activeChannelData.data;
+  const voltsPerDivision = activeChannelData.settings.voltsPerDivision;
+  const verticalOffset = activeChannelData.settings.verticalOffset;
 
   // Find peaks and valleys in waveform data
   const findPeaksAndValleys = useCallback((data: number[]): { peaks: number[]; valleys: number[] } => {
@@ -191,10 +202,15 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   }, [divisions]);
 
   const drawTriggerLevel = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const voltsRange = voltsPerDivision * divisions;
+    // Use trigger source channel for positioning
+    const triggerChannelSettings = triggerSource === 'ch1' ? channel1Data.settings : channel2Data.settings;
+    const triggerVoltsPerDiv = triggerChannelSettings.voltsPerDivision;
+    const triggerVerticalOffset = triggerChannelSettings.verticalOffset;
+    
+    const voltsRange = triggerVoltsPerDiv * divisions;
     const centerY = height / 2;
     const pixelsPerVolt = height / voltsRange;
-    const triggerY = centerY - (triggerLevel + verticalOffset) * pixelsPerVolt;
+    const triggerY = centerY - (triggerLevel + triggerVerticalOffset) * pixelsPerVolt;
 
     ctx.strokeStyle = 'rgba(255, 200, 0, 0.8)';
     ctx.lineWidth = 1;
@@ -234,15 +250,21 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.lineTo(20, triggerY + 4);
     }
     ctx.stroke();
-  }, [triggerLevel, verticalOffset, voltsPerDivision, divisions, triggerEdge]);
+  }, [triggerLevel, channel1Data.settings, channel2Data.settings, triggerSource, divisions, triggerEdge]);
 
-  const drawWaveform = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    if (data.length === 0) return;
+  const drawWaveform = useCallback((
+    ctx: CanvasRenderingContext2D, 
+    width: number, 
+    height: number, 
+    channelData: ChannelData
+  ) => {
+    if (channelData.data.length === 0 || !channelData.settings.enabled) return;
 
-    const voltsRange = voltsPerDivision * divisions;
+    const { data: chData, settings, traceColor, glowColor } = channelData;
+    const voltsRange = settings.voltsPerDivision * divisions;
     const centerY = height / 2;
     const pixelsPerVolt = height / voltsRange;
-    const pixelsPerPoint = width / data.length;
+    const pixelsPerPoint = width / chData.length;
 
     ctx.strokeStyle = traceColor;
     ctx.lineWidth = 2;
@@ -250,14 +272,14 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.lineJoin = 'round';
 
     // Add glow effect
-    ctx.shadowColor = traceColor;
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 8;
 
     ctx.beginPath();
 
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < chData.length; i++) {
       const x = i * pixelsPerPoint;
-      const y = centerY - (data[i] + verticalOffset) * pixelsPerVolt;
+      const y = centerY - (chData[i] + settings.verticalOffset) * pixelsPerVolt;
 
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -268,7 +290,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
     ctx.stroke();
     ctx.shadowBlur = 0;
-  }, [data, voltsPerDivision, divisions, verticalOffset, traceColor]);
+  }, [divisions]);
 
   const drawCursors = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!cursorSettings?.enabled) return;
@@ -599,9 +621,11 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       drawTriggerLevel(ctx, width, height);
     }
 
-    drawWaveform(ctx, width, height);
+    // Draw both channels (CH2 first so CH1 appears on top)
+    drawWaveform(ctx, width, height, channel2Data);
+    drawWaveform(ctx, width, height, channel1Data);
     drawCursors(ctx, width, height);
-  }, [data, showGrid, showTrigger, cursorSettings, hoveredCursor, drawGrid, drawTriggerLevel, drawWaveform, drawCursors]);
+  }, [channel1Data, channel2Data, showGrid, showTrigger, cursorSettings, hoveredCursor, drawGrid, drawTriggerLevel, drawWaveform, drawCursors]);
 
   const cursorStyle = hoveredCursor 
     ? (hoveredCursor === 'x1' || hoveredCursor === 'x2' ? 'ew-resize' : 'ns-resize')

@@ -40,6 +40,8 @@
     /* Oscilloscope specific colors */
     --trace: 150 85% 50%;
     --trace-glow: 150 85% 60%;
+    --trace-ch2: 45 95% 55%;
+    --trace-ch2-glow: 45 95% 65%;
     --trigger: 45 90% 55%;
     --oscilloscope-screen: 220 25% 4%;
 

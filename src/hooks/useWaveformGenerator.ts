@@ -8,6 +8,13 @@ export interface WaveformSettings {
   noiseLevel: number; // 0-1
 }
 
+export interface ChannelSettings {
+  enabled: boolean;
+  voltsPerDivision: number;
+  verticalOffset: number;
+  waveformSettings: WaveformSettings;
+}
+
 export interface TimebaseSettings {
   timePerDivision: number; // seconds per division
   sampleRate: number; // samples per second
@@ -15,20 +22,44 @@ export interface TimebaseSettings {
 
 export type TriggerMode = 'auto' | 'normal' | 'single';
 export type TriggerEdge = 'rising' | 'falling';
+export type TriggerSource = 'ch1' | 'ch2';
 
 export interface TriggerSettings {
   mode: TriggerMode;
   edge: TriggerEdge;
   level: number; // Volts
   holdoff: number; // seconds (0 to disable)
+  source: TriggerSource;
 }
 
-const DEFAULT_WAVEFORM: WaveformSettings = {
+const DEFAULT_WAVEFORM_CH1: WaveformSettings = {
   frequency: 1000,
   amplitude: 2.5,
   offset: 0,
   waveformType: 'sine',
   noiseLevel: 0.02,
+};
+
+const DEFAULT_WAVEFORM_CH2: WaveformSettings = {
+  frequency: 2000,
+  amplitude: 1.5,
+  offset: 0,
+  waveformType: 'square',
+  noiseLevel: 0.02,
+};
+
+const DEFAULT_CHANNEL_1: ChannelSettings = {
+  enabled: true,
+  voltsPerDivision: 1,
+  verticalOffset: 0,
+  waveformSettings: DEFAULT_WAVEFORM_CH1,
+};
+
+const DEFAULT_CHANNEL_2: ChannelSettings = {
+  enabled: false,
+  voltsPerDivision: 1,
+  verticalOffset: 0,
+  waveformSettings: DEFAULT_WAVEFORM_CH2,
 };
 
 const DEFAULT_TIMEBASE: TimebaseSettings = {
@@ -41,16 +72,19 @@ const DEFAULT_TRIGGER: TriggerSettings = {
   edge: 'rising',
   level: 0,
   holdoff: 0,
+  source: 'ch1',
 };
 
 export function useWaveformGenerator(
   divisions: number = 10,
   pointsPerDivision: number = 100
 ) {
-  const [waveformSettings, setWaveformSettings] = useState<WaveformSettings>(DEFAULT_WAVEFORM);
+  const [channel1, setChannel1] = useState<ChannelSettings>(DEFAULT_CHANNEL_1);
+  const [channel2, setChannel2] = useState<ChannelSettings>(DEFAULT_CHANNEL_2);
   const [timebaseSettings, setTimebaseSettings] = useState<TimebaseSettings>(DEFAULT_TIMEBASE);
   const [triggerSettings, setTriggerSettings] = useState<TriggerSettings>(DEFAULT_TRIGGER);
-  const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [waveformDataCh1, setWaveformDataCh1] = useState<number[]>([]);
+  const [waveformDataCh2, setWaveformDataCh2] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(true);
   const [isTriggered, setIsTriggered] = useState(false);
   const [triggerArmed, setTriggerArmed] = useState(true);
@@ -59,11 +93,12 @@ export function useWaveformGenerator(
   const animationRef = useRef<number>();
   const lastTriggerTimeRef = useRef(0);
   const autoTriggerCounterRef = useRef(0);
-  const frozenDataRef = useRef<number[]>([]);
+  const frozenDataCh1Ref = useRef<number[]>([]);
+  const frozenDataCh2Ref = useRef<number[]>([]);
   const triggeredPhaseRef = useRef(0);
 
-  // Generate raw waveform data at a given phase
-  const generateWaveformAtPhase = useCallback((phase: number): number[] => {
+  // Generate raw waveform data at a given phase for a specific channel
+  const generateWaveformAtPhase = useCallback((phase: number, waveformSettings: WaveformSettings): number[] => {
     const { frequency, amplitude, offset, waveformType, noiseLevel } = waveformSettings;
     const { timePerDivision } = timebaseSettings;
     
@@ -107,11 +142,12 @@ export function useWaveformGenerator(
     }
     
     return data;
-  }, [waveformSettings, timebaseSettings, divisions, pointsPerDivision]);
+  }, [timebaseSettings, divisions, pointsPerDivision]);
 
   // Find trigger point in the data - returns the phase offset to align trigger
   const findTriggerPhase = useCallback((currentPhase: number): number | null => {
-    const { frequency, amplitude, offset, waveformType } = waveformSettings;
+    const triggerChannel = triggerSettings.source === 'ch1' ? channel1 : channel2;
+    const { frequency, amplitude, offset, waveformType } = triggerChannel.waveformSettings;
     const { level, edge } = triggerSettings;
     
     // For sine wave, we can calculate the exact phase for the trigger level
@@ -127,7 +163,6 @@ export function useWaveformGenerator(
         }
         
         // Align to trigger phase
-        const angularFreq = 2 * Math.PI * frequency;
         const currentCyclePhase = currentPhase % (2 * Math.PI);
         const phaseOffset = triggerPhase - currentCyclePhase;
         
@@ -136,7 +171,7 @@ export function useWaveformGenerator(
     }
     
     // For other waveforms, sample and find crossing
-    const testData = generateWaveformAtPhase(currentPhase);
+    const testData = generateWaveformAtPhase(currentPhase, triggerChannel.waveformSettings);
     const totalPoints = testData.length;
     
     for (let i = 1; i < Math.min(totalPoints / 2, 200); i++) {
@@ -158,7 +193,7 @@ export function useWaveformGenerator(
     }
     
     return null;
-  }, [waveformSettings, triggerSettings, timebaseSettings, divisions, generateWaveformAtPhase]);
+  }, [triggerSettings, channel1, channel2, timebaseSettings, divisions, generateWaveformAtPhase]);
 
   // Check if we should trigger
   const shouldTrigger = useCallback((currentTime: number): boolean => {
@@ -187,7 +222,8 @@ export function useWaveformGenerator(
 
     const animate = (timestamp: number) => {
       const { mode } = triggerSettings;
-      const phaseIncrement = (2 * Math.PI * waveformSettings.frequency) / 60; // 60 FPS
+      const triggerChannel = triggerSettings.source === 'ch1' ? channel1 : channel2;
+      const phaseIncrement = (2 * Math.PI * triggerChannel.waveformSettings.frequency) / 60; // 60 FPS
       phaseRef.current += phaseIncrement;
       
       if (phaseRef.current > 2 * Math.PI * 100) {
@@ -200,9 +236,14 @@ export function useWaveformGenerator(
         if (triggerPhaseOffset !== null) {
           // Found a valid trigger point
           triggeredPhaseRef.current = phaseRef.current + triggerPhaseOffset;
-          const newData = generateWaveformAtPhase(triggeredPhaseRef.current);
-          frozenDataRef.current = newData;
-          setWaveformData(newData);
+          
+          const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(triggeredPhaseRef.current, channel1.waveformSettings) : [];
+          const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(triggeredPhaseRef.current, channel2.waveformSettings) : [];
+          
+          frozenDataCh1Ref.current = newDataCh1;
+          frozenDataCh2Ref.current = newDataCh2;
+          setWaveformDataCh1(newDataCh1);
+          setWaveformDataCh2(newDataCh2);
           setIsTriggered(true);
           lastTriggerTimeRef.current = timestamp;
           autoTriggerCounterRef.current = 0;
@@ -216,15 +257,20 @@ export function useWaveformGenerator(
           // Auto mode: trigger anyway after timeout
           autoTriggerCounterRef.current++;
           if (autoTriggerCounterRef.current > 30) { // ~0.5 second at 60fps
-            const newData = generateWaveformAtPhase(phaseRef.current);
-            setWaveformData(newData);
+            const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(phaseRef.current, channel1.waveformSettings) : [];
+            const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(phaseRef.current, channel2.waveformSettings) : [];
+            setWaveformDataCh1(newDataCh1);
+            setWaveformDataCh2(newDataCh2);
             setIsTriggered(false);
             autoTriggerCounterRef.current = 0;
           }
         } else if (mode === 'normal') {
           // Normal mode: keep showing last triggered data
-          if (frozenDataRef.current.length > 0) {
-            setWaveformData(frozenDataRef.current);
+          if (frozenDataCh1Ref.current.length > 0) {
+            setWaveformDataCh1(frozenDataCh1Ref.current);
+          }
+          if (frozenDataCh2Ref.current.length > 0) {
+            setWaveformDataCh2(frozenDataCh2Ref.current);
           }
           setIsTriggered(false);
         }
@@ -240,7 +286,7 @@ export function useWaveformGenerator(
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isRunning, waveformSettings.frequency, triggerSettings, shouldTrigger, findTriggerPhase, generateWaveformAtPhase]);
+  }, [isRunning, channel1, channel2, triggerSettings, shouldTrigger, findTriggerPhase, generateWaveformAtPhase]);
 
   const toggleRunning = useCallback(() => {
     setIsRunning(prev => !prev);
@@ -255,7 +301,8 @@ export function useWaveformGenerator(
     triggeredPhaseRef.current = 0;
     lastTriggerTimeRef.current = 0;
     autoTriggerCounterRef.current = 0;
-    frozenDataRef.current = [];
+    frozenDataCh1Ref.current = [];
+    frozenDataCh2Ref.current = [];
     setTriggerArmed(true);
   }, []);
 
@@ -267,9 +314,12 @@ export function useWaveformGenerator(
   }, [isRunning, triggerSettings.mode]);
 
   return {
-    waveformData,
-    waveformSettings,
-    setWaveformSettings,
+    waveformDataCh1,
+    waveformDataCh2,
+    channel1,
+    setChannel1,
+    channel2,
+    setChannel2,
     timebaseSettings,
     setTimebaseSettings,
     triggerSettings,
