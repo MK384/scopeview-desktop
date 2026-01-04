@@ -26,6 +26,8 @@ const Index = () => {
   const [triggerLevel, setTriggerLevel] = useState(0);
   const [cursorSettings, setCursorSettings] = useState<CursorSettings>({
     enabled: false,
+    showVertical: true,
+    showHorizontal: true,
     x1: 0.25,
     x2: 0.75,
     y1: 0.25,
@@ -63,6 +65,7 @@ const Index = () => {
               showGrid={true}
               showTrigger={true}
               cursorSettings={cursorSettings}
+              onCursorChange={setCursorSettings}
               timePerDivision={timebaseSettings.timePerDivision}
             />
           </div>

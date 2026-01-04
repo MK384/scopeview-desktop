@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import type { CursorSettings } from './CursorPanel';
 
 interface WaveformCanvasProps {
@@ -11,8 +11,11 @@ interface WaveformCanvasProps {
   showTrigger: boolean;
   traceColor?: string;
   cursorSettings?: CursorSettings;
+  onCursorChange?: (settings: CursorSettings) => void;
   timePerDivision?: number;
 }
+
+type DragTarget = 'x1' | 'x2' | 'y1' | 'y2' | null;
 
 export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   data,
@@ -24,10 +27,15 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   showTrigger = true,
   traceColor = '#00ff88',
   cursorSettings,
+  onCursorChange,
   timePerDivision = 0.001,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dragTarget, setDragTarget] = useState<DragTarget>(null);
+  const [hoveredCursor, setHoveredCursor] = useState<DragTarget>(null);
+
+  const DRAG_THRESHOLD = 10; // pixels for hit detection
 
   const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridColor = 'rgba(100, 100, 100, 0.4)';
@@ -150,81 +158,183 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   const drawCursors = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!cursorSettings?.enabled) return;
 
-    const totalTime = timePerDivision * divisions;
-    const totalVolts = voltsPerDivision * divisions;
-
     // Time cursor colors (cyan)
-    const timeCursorColor1 = 'rgba(34, 211, 238, 0.9)';
-    const timeCursorColor2 = 'rgba(34, 211, 238, 0.6)';
+    const timeCursorColor1 = hoveredCursor === 'x1' ? 'rgba(34, 211, 238, 1)' : 'rgba(34, 211, 238, 0.9)';
+    const timeCursorColor2 = hoveredCursor === 'x2' ? 'rgba(34, 211, 238, 0.85)' : 'rgba(34, 211, 238, 0.6)';
 
     // Voltage cursor colors (pink)
-    const voltCursorColor1 = 'rgba(244, 114, 182, 0.9)';
-    const voltCursorColor2 = 'rgba(244, 114, 182, 0.6)';
+    const voltCursorColor1 = hoveredCursor === 'y1' ? 'rgba(244, 114, 182, 1)' : 'rgba(244, 114, 182, 0.9)';
+    const voltCursorColor2 = hoveredCursor === 'y2' ? 'rgba(244, 114, 182, 0.85)' : 'rgba(244, 114, 182, 0.6)';
 
-    ctx.lineWidth = 1;
+    ctx.lineWidth = hoveredCursor ? 2 : 1;
     ctx.setLineDash([4, 4]);
 
     // Draw vertical cursors (time)
-    const x1 = cursorSettings.x1 * width;
-    const x2 = cursorSettings.x2 * width;
+    if (cursorSettings.showVertical) {
+      const x1 = cursorSettings.x1 * width;
+      const x2 = cursorSettings.x2 * width;
 
-    ctx.strokeStyle = timeCursorColor1;
-    ctx.beginPath();
-    ctx.moveTo(x1, 0);
-    ctx.lineTo(x1, height);
-    ctx.stroke();
+      ctx.strokeStyle = timeCursorColor1;
+      ctx.lineWidth = hoveredCursor === 'x1' ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x1, 0);
+      ctx.lineTo(x1, height);
+      ctx.stroke();
 
-    ctx.strokeStyle = timeCursorColor2;
-    ctx.beginPath();
-    ctx.moveTo(x2, 0);
-    ctx.lineTo(x2, height);
-    ctx.stroke();
+      ctx.strokeStyle = timeCursorColor2;
+      ctx.lineWidth = hoveredCursor === 'x2' ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x2, 0);
+      ctx.lineTo(x2, height);
+      ctx.stroke();
+
+      // Draw drag handles for vertical cursors
+      ctx.setLineDash([]);
+      ctx.fillStyle = timeCursorColor1;
+      ctx.beginPath();
+      ctx.arc(x1, 20, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = timeCursorColor2;
+      ctx.beginPath();
+      ctx.arc(x2, 20, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Labels
+      ctx.font = '11px monospace';
+      ctx.fillStyle = timeCursorColor1;
+      ctx.fillText('T1', x1 + 10, 24);
+      ctx.fillStyle = timeCursorColor2;
+      ctx.fillText('T2', x2 + 10, 24);
+
+      // Delta shading
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
+      ctx.fillRect(Math.min(x1, x2), 0, Math.abs(x2 - x1), height);
+      
+      ctx.setLineDash([4, 4]);
+    }
 
     // Draw horizontal cursors (voltage)
-    const y1 = cursorSettings.y1 * height;
-    const y2 = cursorSettings.y2 * height;
+    if (cursorSettings.showHorizontal) {
+      const y1 = cursorSettings.y1 * height;
+      const y2 = cursorSettings.y2 * height;
 
-    ctx.strokeStyle = voltCursorColor1;
-    ctx.beginPath();
-    ctx.moveTo(0, y1);
-    ctx.lineTo(width, y1);
-    ctx.stroke();
+      ctx.strokeStyle = voltCursorColor1;
+      ctx.lineWidth = hoveredCursor === 'y1' ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y1);
+      ctx.lineTo(width, y1);
+      ctx.stroke();
 
-    ctx.strokeStyle = voltCursorColor2;
-    ctx.beginPath();
-    ctx.moveTo(0, y2);
-    ctx.lineTo(width, y2);
-    ctx.stroke();
+      ctx.strokeStyle = voltCursorColor2;
+      ctx.lineWidth = hoveredCursor === 'y2' ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y2);
+      ctx.lineTo(width, y2);
+      ctx.stroke();
+
+      // Draw drag handles for horizontal cursors
+      ctx.setLineDash([]);
+      ctx.fillStyle = voltCursorColor1;
+      ctx.beginPath();
+      ctx.arc(width - 20, y1, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = voltCursorColor2;
+      ctx.beginPath();
+      ctx.arc(width - 20, y2, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Labels
+      ctx.font = '11px monospace';
+      ctx.fillStyle = voltCursorColor1;
+      ctx.fillText('V1', width - 44, y1 - 8);
+      ctx.fillStyle = voltCursorColor2;
+      ctx.fillText('V2', width - 44, y2 - 8);
+
+      // Delta shading
+      ctx.fillStyle = 'rgba(244, 114, 182, 0.05)';
+      ctx.fillRect(0, Math.min(y1, y2), width, Math.abs(y2 - y1));
+    }
 
     ctx.setLineDash([]);
+  }, [cursorSettings, hoveredCursor]);
 
-    // Draw labels
-    ctx.font = '11px monospace';
-    
-    // T1 label
-    ctx.fillStyle = timeCursorColor1;
-    ctx.fillText('T1', x1 + 4, 14);
-    
-    // T2 label
-    ctx.fillStyle = timeCursorColor2;
-    ctx.fillText('T2', x2 + 4, 28);
-    
-    // V1 label
-    ctx.fillStyle = voltCursorColor1;
-    ctx.fillText('V1', width - 24, y1 - 4);
-    
-    // V2 label
-    ctx.fillStyle = voltCursorColor2;
-    ctx.fillText('V2', width - 24, y2 - 4);
+  const findCursorAtPosition = useCallback((mouseX: number, mouseY: number, width: number, height: number): DragTarget => {
+    if (!cursorSettings?.enabled) return null;
 
-    // Draw delta shading
-    ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
-    ctx.fillRect(Math.min(x1, x2), 0, Math.abs(x2 - x1), height);
+    // Check vertical cursors (time)
+    if (cursorSettings.showVertical) {
+      const x1 = cursorSettings.x1 * width;
+      const x2 = cursorSettings.x2 * width;
 
-    ctx.fillStyle = 'rgba(244, 114, 182, 0.05)';
-    ctx.fillRect(0, Math.min(y1, y2), width, Math.abs(y2 - y1));
+      if (Math.abs(mouseX - x1) < DRAG_THRESHOLD) return 'x1';
+      if (Math.abs(mouseX - x2) < DRAG_THRESHOLD) return 'x2';
+    }
 
-  }, [cursorSettings, timePerDivision, voltsPerDivision, divisions]);
+    // Check horizontal cursors (voltage)
+    if (cursorSettings.showHorizontal) {
+      const y1 = cursorSettings.y1 * height;
+      const y2 = cursorSettings.y2 * height;
+
+      if (Math.abs(mouseY - y1) < DRAG_THRESHOLD) return 'y1';
+      if (Math.abs(mouseY - y2) < DRAG_THRESHOLD) return 'y2';
+    }
+
+    return null;
+  }, [cursorSettings, DRAG_THRESHOLD]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const container = containerRef.current;
+    if (!container || !cursorSettings?.enabled || !onCursorChange) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const target = findCursorAtPosition(mouseX, mouseY, rect.width, rect.height);
+    if (target) {
+      setDragTarget(target);
+      e.preventDefault();
+    }
+  }, [cursorSettings, onCursorChange, findCursorAtPosition]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const container = containerRef.current;
+    if (!container || !cursorSettings?.enabled) return;
+
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (dragTarget && onCursorChange) {
+      // Update cursor position while dragging
+      const newSettings = { ...cursorSettings };
+      
+      if (dragTarget === 'x1' || dragTarget === 'x2') {
+        const normalizedX = Math.max(0, Math.min(1, mouseX / rect.width));
+        newSettings[dragTarget] = normalizedX;
+      } else if (dragTarget === 'y1' || dragTarget === 'y2') {
+        const normalizedY = Math.max(0, Math.min(1, mouseY / rect.height));
+        newSettings[dragTarget] = normalizedY;
+      }
+
+      onCursorChange(newSettings);
+    } else {
+      // Update hover state
+      const target = findCursorAtPosition(mouseX, mouseY, rect.width, rect.height);
+      setHoveredCursor(target);
+    }
+  }, [cursorSettings, dragTarget, onCursorChange, findCursorAtPosition]);
+
+  const handleMouseUp = useCallback(() => {
+    setDragTarget(null);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setDragTarget(null);
+    setHoveredCursor(null);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -281,14 +391,26 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
     drawWaveform(ctx, width, height);
     drawCursors(ctx, width, height);
-  }, [data, showGrid, showTrigger, cursorSettings, drawGrid, drawTriggerLevel, drawWaveform, drawCursors]);
+  }, [data, showGrid, showTrigger, cursorSettings, hoveredCursor, drawGrid, drawTriggerLevel, drawWaveform, drawCursors]);
+
+  const cursorStyle = hoveredCursor 
+    ? (hoveredCursor === 'x1' || hoveredCursor === 'x2' ? 'ew-resize' : 'ns-resize')
+    : 'crosshair';
 
   return (
     <div 
       ref={containerRef} 
       className="w-full h-full bg-oscilloscope-screen rounded-lg overflow-hidden border border-border/50"
     >
-      <canvas ref={canvasRef} className="w-full h-full" />
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full"
+        style={{ cursor: cursorStyle }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      />
     </div>
   );
 };
