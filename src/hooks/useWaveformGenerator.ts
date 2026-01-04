@@ -8,10 +8,13 @@ export interface WaveformSettings {
   noiseLevel: number; // 0-1
 }
 
+export type InputRange = '5V' | '15V';
+
 export interface ChannelSettings {
   enabled: boolean;
   voltsPerDivision: number;
   verticalOffset: number;
+  inputRange: InputRange;
   waveformSettings: WaveformSettings;
 }
 
@@ -52,6 +55,7 @@ const DEFAULT_CHANNEL_1: ChannelSettings = {
   enabled: true,
   voltsPerDivision: 1,
   verticalOffset: 0,
+  inputRange: '5V',
   waveformSettings: DEFAULT_WAVEFORM_CH1,
 };
 
@@ -59,6 +63,7 @@ const DEFAULT_CHANNEL_2: ChannelSettings = {
   enabled: false,
   voltsPerDivision: 1,
   verticalOffset: 0,
+  inputRange: '5V',
   waveformSettings: DEFAULT_WAVEFORM_CH2,
 };
 
