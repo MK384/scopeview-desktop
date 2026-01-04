@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import type { TimebaseSettings, ChannelSettings, InputRange } from '@/hooks/useWaveformGenerator';
+import type { TimebaseSettings, ChannelSettings, InputRange, CouplingMode } from '@/hooks/useWaveformGenerator';
 
 interface ControlPanelProps {
   timebaseSettings: TimebaseSettings;
@@ -50,6 +50,12 @@ const VOLTS_PER_DIV_OPTIONS = [
 const INPUT_RANGE_OPTIONS: { label: string; value: InputRange }[] = [
   { label: '±5 V', value: '5V' },
   { label: '±15 V', value: '15V' },
+];
+
+const COUPLING_OPTIONS: { label: string; value: CouplingMode }[] = [
+  { label: 'AC', value: 'AC' },
+  { label: 'DC', value: 'DC' },
+  { label: 'GND', value: 'GND' },
 ];
 
 interface ChannelPanelProps {
@@ -108,23 +114,43 @@ const ChannelPanel: React.FC<ChannelPanelProps> = ({ channel, onChange, channelN
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Input Range</Label>
-            <Select
-              value={channel.inputRange}
-              onValueChange={(value: InputRange) => onChange({ ...channel, inputRange: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {INPUT_RANGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Input Range</Label>
+              <Select
+                value={channel.inputRange}
+                onValueChange={(value: InputRange) => onChange({ ...channel, inputRange: value })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INPUT_RANGE_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Coupling</Label>
+              <Select
+                value={channel.coupling}
+                onValueChange={(value: CouplingMode) => onChange({ ...channel, coupling: value })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUPLING_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </>
       )}
