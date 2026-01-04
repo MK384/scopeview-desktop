@@ -6,6 +6,7 @@ export interface CursorSettings {
   enabled: boolean;
   showVertical: boolean;
   showHorizontal: boolean;
+  snapToWaveform: boolean;
   x1: number; // 0-1 position
   x2: number; // 0-1 position
   y1: number; // 0-1 position
@@ -90,6 +91,17 @@ export const CursorPanel: React.FC<CursorPanelProps> = ({
                 }
               />
             </div>
+          </div>
+
+          {/* Snap Toggle */}
+          <div className="flex items-center justify-between bg-muted/30 rounded p-2">
+            <Label className="text-xs text-muted-foreground">Snap to Waveform</Label>
+            <Switch
+              checked={cursorSettings.snapToWaveform}
+              onCheckedChange={(snapToWaveform) => 
+                onCursorChange({ ...cursorSettings, snapToWaveform })
+              }
+            />
           </div>
 
           <p className="text-xs text-muted-foreground italic">

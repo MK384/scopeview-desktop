@@ -333,10 +333,16 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.closePath();
       ctx.fill();
 
-      // ΔT label
+      // ΔT and frequency labels
       ctx.font = 'bold 12px monospace';
       ctx.fillStyle = 'rgba(200, 200, 200, 1)';
-      const deltaTText = `ΔT: ${formatTime(deltaT)}`;
+      const frequency = deltaT > 0 ? 1 / deltaT : 0;
+      const freqText = frequency >= 1000000 
+        ? `${(frequency / 1000000).toFixed(2)}MHz`
+        : frequency >= 1000 
+          ? `${(frequency / 1000).toFixed(2)}kHz`
+          : `${frequency.toFixed(2)}Hz`;
+      const deltaTText = `ΔT: ${formatTime(deltaT)}  (${freqText})`;
       const deltaTWidth = ctx.measureText(deltaTText).width;
       ctx.fillText(deltaTText, (minX + maxX) / 2 - deltaTWidth / 2, deltaY - 8);
 
@@ -488,13 +494,17 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       
       if (dragTarget === 'x1' || dragTarget === 'x2') {
         let normalizedX = Math.max(0, Math.min(1, mouseX / rect.width));
-        // Snap to waveform peaks/valleys
-        normalizedX = snapToWaveform(normalizedX, rect.width);
+        // Snap to waveform peaks/valleys (if enabled)
+        if (cursorSettings.snapToWaveform) {
+          normalizedX = snapToWaveform(normalizedX, rect.width);
+        }
         newSettings[dragTarget] = normalizedX;
       } else if (dragTarget === 'y1' || dragTarget === 'y2') {
         let normalizedY = Math.max(0, Math.min(1, mouseY / rect.height));
-        // Snap to waveform voltage levels
-        normalizedY = snapToWaveformVoltage(normalizedY, rect.height);
+        // Snap to waveform voltage levels (if enabled)
+        if (cursorSettings.snapToWaveform) {
+          normalizedY = snapToWaveformVoltage(normalizedY, rect.height);
+        }
         newSettings[dragTarget] = normalizedY;
       }
 
