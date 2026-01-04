@@ -103,48 +103,48 @@ const ChannelMeasurements: React.FC<ChannelMeasurementsProps> = ({
   channelNum,
   colorClass,
 }) => (
-  <div className="space-y-2">
-    <h4 className={`text-xs font-semibold ${colorClass} uppercase`}>CH{channelNum}</h4>
-    <div className="grid grid-cols-3 gap-4 text-sm">
-      {/* Column 1: Voltage Min/Max */}
-      <div className="space-y-2">
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">V min</span>
-          <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vMin, 'V')}</p>
-        </div>
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">V max</span>
-          <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vMax, 'V')}</p>
-        </div>
+  <>
+    {/* Column 1: Voltage Min/Max */}
+    <div className="space-y-2">
+      <h4 className={`text-xs font-semibold ${colorClass} uppercase`}>CH{channelNum}</h4>
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">V min</span>
+        <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vMin, 'V')}</p>
       </div>
-
-      {/* Column 2: V p-p / V rms */}
-      <div className="space-y-2">
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">V p-p</span>
-          <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vPP, 'V')}</p>
-        </div>
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">V rms</span>
-          <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vRMS, 'V')}</p>
-        </div>
-      </div>
-
-      {/* Column 3: Frequency / Period / Duty Cycle */}
-      <div className="space-y-2">
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">Freq (Duty)</span>
-          <p className={`font-mono ${colorClass}`}>
-            {formatValue(measurements.frequency, 'Hz')} ({measurements.dutyCycle.toFixed(1)}%)
-          </p>
-        </div>
-        <div className="space-y-0.5">
-          <span className="text-muted-foreground text-xs">Period</span>
-          <p className={`font-mono ${colorClass}`}>{formatValue(measurements.period, 's')}</p>
-        </div>
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">V max</span>
+        <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vMax, 'V')}</p>
       </div>
     </div>
-  </div>
+
+    {/* Column 2: V p-p / V rms */}
+    <div className="space-y-2">
+      <div className="h-4" /> {/* Spacer for header alignment */}
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">V p-p</span>
+        <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vPP, 'V')}</p>
+      </div>
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">V rms</span>
+        <p className={`font-mono ${colorClass}`}>{formatValue(measurements.vRMS, 'V')}</p>
+      </div>
+    </div>
+
+    {/* Column 3: Frequency / Period / Duty Cycle */}
+    <div className="space-y-2">
+      <div className="h-4" /> {/* Spacer for header alignment */}
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">Freq (Duty)</span>
+        <p className={`font-mono ${colorClass}`}>
+          {formatValue(measurements.frequency, 'Hz')} ({measurements.dutyCycle.toFixed(1)}%)
+        </p>
+      </div>
+      <div className="space-y-0.5">
+        <span className="text-muted-foreground text-xs">Period</span>
+        <p className={`font-mono ${colorClass}`}>{formatValue(measurements.period, 's')}</p>
+      </div>
+    </div>
+  </>
 );
 
 export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
@@ -175,21 +175,19 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
     );
   }
 
+  const bothEnabled = ch1Enabled && ch2Enabled;
+
   return (
     <div className="bg-card border border-border rounded-lg p-4">
       <h3 className="text-sm font-semibold text-accent uppercase tracking-wide mb-4">Measurements</h3>
       
-      <div className="space-y-4">
+      <div className={`grid gap-4 text-sm ${bothEnabled ? 'grid-cols-6' : 'grid-cols-3'}`}>
         {ch1Enabled && (
           <ChannelMeasurements
             measurements={measurements1}
             channelNum={1}
             colorClass="text-primary"
           />
-        )}
-        
-        {ch1Enabled && ch2Enabled && (
-          <div className="border-t border-border" />
         )}
         
         {ch2Enabled && (
