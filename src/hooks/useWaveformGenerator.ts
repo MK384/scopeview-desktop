@@ -9,12 +9,14 @@ export interface WaveformSettings {
 }
 
 export type InputRange = '5V' | '15V';
+export type CouplingMode = 'AC' | 'DC' | 'GND';
 
 export interface ChannelSettings {
   enabled: boolean;
   voltsPerDivision: number;
   verticalOffset: number;
   inputRange: InputRange;
+  coupling: CouplingMode;
   waveformSettings: WaveformSettings;
 }
 
@@ -56,6 +58,7 @@ const DEFAULT_CHANNEL_1: ChannelSettings = {
   voltsPerDivision: 1,
   verticalOffset: 0,
   inputRange: '5V',
+  coupling: 'DC',
   waveformSettings: DEFAULT_WAVEFORM_CH1,
 };
 
@@ -64,6 +67,7 @@ const DEFAULT_CHANNEL_2: ChannelSettings = {
   voltsPerDivision: 1,
   verticalOffset: 0,
   inputRange: '5V',
+  coupling: 'DC',
   waveformSettings: DEFAULT_WAVEFORM_CH2,
 };
 
