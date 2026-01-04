@@ -10,6 +10,7 @@ export interface WaveformSettings {
 
 export type InputRange = '5V' | '15V';
 export type CouplingMode = 'AC' | 'DC' | 'GND';
+export type ProbeAttenuation = '1X' | '10X';
 
 export interface ChannelSettings {
   enabled: boolean;
@@ -17,6 +18,7 @@ export interface ChannelSettings {
   verticalOffset: number;
   inputRange: InputRange;
   coupling: CouplingMode;
+  probeAttenuation: ProbeAttenuation;
   waveformSettings: WaveformSettings;
 }
 
@@ -59,6 +61,7 @@ const DEFAULT_CHANNEL_1: ChannelSettings = {
   verticalOffset: 0,
   inputRange: '5V',
   coupling: 'DC',
+  probeAttenuation: '1X',
   waveformSettings: DEFAULT_WAVEFORM_CH1,
 };
 
@@ -68,6 +71,7 @@ const DEFAULT_CHANNEL_2: ChannelSettings = {
   verticalOffset: 0,
   inputRange: '5V',
   coupling: 'DC',
+  probeAttenuation: '1X',
   waveformSettings: DEFAULT_WAVEFORM_CH2,
 };
 

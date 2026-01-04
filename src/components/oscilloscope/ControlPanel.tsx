@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import type { TimebaseSettings, ChannelSettings, InputRange, CouplingMode } from '@/hooks/useWaveformGenerator';
+import type { TimebaseSettings, ChannelSettings, InputRange, CouplingMode, ProbeAttenuation } from '@/hooks/useWaveformGenerator';
 
 interface ControlPanelProps {
   timebaseSettings: TimebaseSettings;
@@ -58,6 +58,11 @@ const COUPLING_OPTIONS: { label: string; value: CouplingMode }[] = [
   { label: 'GND', value: 'GND' },
 ];
 
+const PROBE_ATTENUATION_OPTIONS: { label: string; value: ProbeAttenuation }[] = [
+  { label: '1X', value: '1X' },
+  { label: '10X', value: '10X' },
+];
+
 interface ChannelPanelProps {
   channel: ChannelSettings;
   onChange: (settings: ChannelSettings) => void;
@@ -82,23 +87,43 @@ const ChannelPanel: React.FC<ChannelPanelProps> = ({ channel, onChange, channelN
 
       {channel.enabled && (
         <>
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Volts/Div</Label>
-            <Select
-              value={channel.voltsPerDivision.toString()}
-              onValueChange={(value) => onChange({ ...channel, voltsPerDivision: parseFloat(value) })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {VOLTS_PER_DIV_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value.toString()}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Volts/Div</Label>
+              <Select
+                value={channel.voltsPerDivision.toString()}
+                onValueChange={(value) => onChange({ ...channel, voltsPerDivision: parseFloat(value) })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VOLTS_PER_DIV_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value.toString()}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Probe</Label>
+              <Select
+                value={channel.probeAttenuation}
+                onValueChange={(value: ProbeAttenuation) => onChange({ ...channel, probeAttenuation: value })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROBE_ATTENUATION_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
