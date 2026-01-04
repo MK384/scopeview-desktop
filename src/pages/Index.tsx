@@ -28,6 +28,7 @@ const Index = () => {
     enabled: false,
     showVertical: true,
     showHorizontal: true,
+    snapToWaveform: true,
     x1: 0.25,
     x2: 0.75,
     y1: 0.25,
