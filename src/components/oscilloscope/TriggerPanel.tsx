@@ -55,7 +55,29 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-accent uppercase tracking-wide">Trigger</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-accent uppercase tracking-wide">Trigger</h3>
+          <div className="flex gap-1">
+            <Button
+              variant={triggerSettings.source === 'ch1' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-6 px-2"
+              onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch1' })}
+              disabled={!channel1.enabled}
+            >
+              CH1
+            </Button>
+            <Button
+              variant={triggerSettings.source === 'ch2' ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-6 px-2"
+              onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch2' })}
+              disabled={!channel2.enabled}
+            >
+              CH2
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <span 
             className={`w-2 h-2 rounded-full ${
@@ -72,46 +94,43 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
         </div>
       </div>
 
-      {/* Source Selection */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Source</Label>
-        <div className="grid grid-cols-2 gap-1">
-          <Button
-            variant={triggerSettings.source === 'ch1' ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs"
-            onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch1' })}
-            disabled={!channel1.enabled}
-          >
-            CH1
-          </Button>
-          <Button
-            variant={triggerSettings.source === 'ch2' ? 'default' : 'outline'}
-            size="sm"
-            className="text-xs"
-            onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch2' })}
-            disabled={!channel2.enabled}
-          >
-            CH2
-          </Button>
+      {/* Mode and Holdoff Row */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Mode</Label>
+          <div className="grid grid-cols-3 gap-1">
+            {(['auto', 'normal', 'single'] as TriggerMode[]).map((mode) => (
+              <Button
+                key={mode}
+                variant={triggerSettings.mode === mode ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs capitalize h-8 px-1"
+                onClick={() => onTriggerSettingsChange({ ...triggerSettings, mode })}
+              >
+                {mode}
+              </Button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Mode Selection */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Mode</Label>
-        <div className="grid grid-cols-3 gap-1">
-          {(['auto', 'normal', 'single'] as TriggerMode[]).map((mode) => (
-            <Button
-              key={mode}
-              variant={triggerSettings.mode === mode ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs capitalize"
-              onClick={() => onTriggerSettingsChange({ ...triggerSettings, mode })}
-            >
-              {mode}
-            </Button>
-          ))}
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Holdoff</Label>
+          <Select
+            value={triggerSettings.holdoff.toString()}
+            onValueChange={(value) => 
+              onTriggerSettingsChange({ ...triggerSettings, holdoff: parseFloat(value) })
+            }
+          >
+            <SelectTrigger className="w-full h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {HOLDOFF_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value.toString()}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -144,27 +163,6 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
         </div>
       </div>
 
-      {/* Holdoff */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Holdoff</Label>
-        <Select
-          value={triggerSettings.holdoff.toString()}
-          onValueChange={(value) => 
-            onTriggerSettingsChange({ ...triggerSettings, holdoff: parseFloat(value) })
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {HOLDOFF_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value.toString()}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Single Mode Arm Button */}
       {triggerSettings.mode === 'single' && (

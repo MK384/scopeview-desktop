@@ -212,7 +212,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     const pixelsPerVolt = height / voltsRange;
     const triggerY = centerY - (triggerLevel + triggerVerticalOffset) * pixelsPerVolt;
 
-    ctx.strokeStyle = 'rgba(255, 200, 0, 0.8)';
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
 
@@ -224,7 +224,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.setLineDash([]);
 
     // Trigger marker with edge direction indicator
-    ctx.fillStyle = 'rgba(255, 200, 0, 0.9)';
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
     ctx.beginPath();
     ctx.moveTo(0, triggerY);
     ctx.lineTo(12, triggerY - 6);
@@ -233,7 +233,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.fill();
 
     // Edge direction arrow
-    ctx.strokeStyle = 'rgba(255, 200, 0, 1)';
+    ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     if (triggerEdge === 'rising') {
