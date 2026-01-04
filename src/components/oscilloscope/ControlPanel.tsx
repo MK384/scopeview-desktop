@@ -3,16 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Pause, RotateCcw } from 'lucide-react';
-import type { TimebaseSettings } from '@/hooks/useWaveformGenerator';
+import type { TimebaseSettings, ChannelSettings } from '@/hooks/useWaveformGenerator';
 
 interface ControlPanelProps {
   timebaseSettings: TimebaseSettings;
   onTimebaseChange: (settings: TimebaseSettings) => void;
-  voltsPerDivision: number;
-  onVoltsPerDivisionChange: (value: number) => void;
-  verticalOffset: number;
-  onVerticalOffsetChange: (value: number) => void;
+  channel1: ChannelSettings;
+  onChannel1Change: (settings: ChannelSettings) => void;
+  channel2: ChannelSettings;
+  onChannel2Change: (settings: ChannelSettings) => void;
   isRunning: boolean;
   onToggleRunning: () => void;
   onReset: () => void;
@@ -49,14 +51,72 @@ const VOLTS_PER_DIV_OPTIONS = [
 export const ControlPanel: React.FC<ControlPanelProps> = ({
   timebaseSettings,
   onTimebaseChange,
-  voltsPerDivision,
-  onVoltsPerDivisionChange,
-  verticalOffset,
-  onVerticalOffsetChange,
+  channel1,
+  onChannel1Change,
+  channel2,
+  onChannel2Change,
   isRunning,
   onToggleRunning,
   onReset,
 }) => {
+  const renderChannelControls = (
+    channel: ChannelSettings, 
+    onChange: (settings: ChannelSettings) => void,
+    channelNum: 1 | 2
+  ) => {
+    const colorClass = channelNum === 1 ? 'text-primary' : 'text-trace-ch2';
+    
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className={`text-xs font-medium ${colorClass}`}>
+            CH{channelNum} Enabled
+          </Label>
+          <Switch
+            checked={channel.enabled}
+            onCheckedChange={(enabled) => onChange({ ...channel, enabled })}
+          />
+        </div>
+
+        {channel.enabled && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Volts/Div</Label>
+              <Select
+                value={channel.voltsPerDivision.toString()}
+                onValueChange={(value) => onChange({ ...channel, voltsPerDivision: parseFloat(value) })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VOLTS_PER_DIV_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value.toString()}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">
+                Offset: {channel.verticalOffset.toFixed(2)} V
+              </Label>
+              <Slider
+                value={[channel.verticalOffset]}
+                onValueChange={([value]) => onChange({ ...channel, verticalOffset: value })}
+                min={-5}
+                max={5}
+                step={0.1}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-6">
       {/* Run/Stop Controls */}
@@ -100,41 +160,26 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
       </div>
 
-      {/* Vertical Controls */}
+      {/* Vertical Controls with Channel Tabs */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-accent uppercase tracking-wide">Vertical</h3>
         
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Volts/Div</Label>
-          <Select
-            value={voltsPerDivision.toString()}
-            onValueChange={(value) => onVoltsPerDivisionChange(parseFloat(value))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {VOLTS_PER_DIV_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value.toString()}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">
-            Offset: {verticalOffset.toFixed(2)} V
-          </Label>
-          <Slider
-            value={[verticalOffset]}
-            onValueChange={([value]) => onVerticalOffsetChange(value)}
-            min={-5}
-            max={5}
-            step={0.1}
-          />
-        </div>
+        <Tabs defaultValue="ch1" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="ch1" className="data-[state=active]:text-primary">
+              CH1
+            </TabsTrigger>
+            <TabsTrigger value="ch2" className="data-[state=active]:text-trace-ch2">
+              CH2
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="ch1" className="mt-3">
+            {renderChannelControls(channel1, onChannel1Change, 1)}
+          </TabsContent>
+          <TabsContent value="ch2" className="mt-3">
+            {renderChannelControls(channel2, onChannel2Change, 2)}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
