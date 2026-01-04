@@ -97,7 +97,8 @@ const Index = () => {
           </div>
 
           <MeasurementPanel
-            data={waveformDataCh1}
+            channel1Data={{ data: waveformDataCh1, settings: channel1 }}
+            channel2Data={{ data: waveformDataCh2, settings: channel2 }}
             timePerDivision={timebaseSettings.timePerDivision}
             divisions={DIVISIONS}
           />
