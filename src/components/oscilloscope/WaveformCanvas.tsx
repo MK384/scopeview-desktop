@@ -199,7 +199,49 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.moveTo(0, height / 2);
     ctx.lineTo(width, height / 2);
     ctx.stroke();
-  }, [divisions]);
+
+    // Time labels on vertical grid lines (white)
+    ctx.font = '9px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    const totalTime = timePerDivision * divisions;
+    for (let i = 0; i <= divisions; i++) {
+      const x = i * divX;
+      const time = (i - divisions / 2) * timePerDivision;
+      const timeLabel = time === 0 ? '0' : formatTime(time);
+      const textWidth = ctx.measureText(timeLabel).width;
+      ctx.fillText(timeLabel, x - textWidth / 2, height - 4);
+    }
+
+    // Voltage labels on horizontal grid lines (colored per channel)
+    const ch1VoltsPerDiv = channel1Data.settings.voltsPerDivision;
+    const ch2VoltsPerDiv = channel2Data.settings.voltsPerDivision;
+    const ch1Enabled = channel1Data.settings.enabled;
+    const ch2Enabled = channel2Data.settings.enabled;
+
+    for (let i = 0; i <= divisions; i++) {
+      const y = i * divY;
+      const divFromCenter = divisions / 2 - i;
+
+      // CH1 voltage labels (left side, yellow)
+      if (ch1Enabled) {
+        const v1 = divFromCenter * ch1VoltsPerDiv;
+        const v1Label = v1 === 0 ? '0' : formatVoltage(v1);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.8)'; // Yellow for CH1
+        ctx.fillText(v1Label, 4, y + 3);
+      }
+
+      // CH2 voltage labels (right side, cyan)
+      if (ch2Enabled) {
+        const v2 = divFromCenter * ch2VoltsPerDiv;
+        const v2Label = v2 === 0 ? '0' : formatVoltage(v2);
+        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.8)'; // Cyan for CH2
+        const textWidth = ctx.measureText(v2Label).width;
+        ctx.fillText(v2Label, width - textWidth - 4, y + 3);
+      }
+    }
+  }, [divisions, timePerDivision, channel1Data.settings, channel2Data.settings]);
 
   const drawTriggerLevel = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // Use trigger source channel for positioning
