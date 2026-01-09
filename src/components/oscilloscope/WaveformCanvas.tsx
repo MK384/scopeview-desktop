@@ -144,7 +144,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     return normalizedY;
   }, [data, voltsPerDivision, divisions, verticalOffset, findPeaksAndValleys, SNAP_RADIUS]);
 
-  const BOTTOM_PADDING = 18; // Space for time labels
+  const BOTTOM_PADDING = 32; // Space for time labels (keeps labels away from rounded corners)
 
   const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridColor = 'rgba(100, 100, 100, 0.4)';
@@ -206,14 +206,23 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     // Time labels on vertical grid lines (white) - below grid
     ctx.font = '10px monospace';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.textBaseline = 'top';
     const totalTime = timePerDivision * divisions;
+    const timeLabelY = gridHeight + 8;
+    const edgeInset = 18; // keep labels away from rounded corners
+
     for (let i = 0; i <= divisions; i++) {
       const x = i * divX;
       const time = (i - divisions / 2) * timePerDivision;
       const timeLabel = time === 0 ? '0' : formatTime(time);
       const textWidth = ctx.measureText(timeLabel).width;
-      ctx.fillText(timeLabel, x - textWidth / 2, height - 4);
+
+      // Prevent edge labels from being clipped by rounded corners / canvas bounds
+      const xPos = Math.min(width - textWidth - edgeInset, Math.max(edgeInset, x - textWidth / 2));
+      ctx.fillText(timeLabel, xPos, timeLabelY);
     }
+
+    ctx.textBaseline = 'alphabetic';
 
     // Voltage labels on horizontal grid lines (colored per channel)
     const ch1VoltsPerDiv = channel1Data.settings.voltsPerDivision;
