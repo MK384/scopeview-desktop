@@ -144,22 +144,25 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     return normalizedY;
   }, [data, voltsPerDivision, divisions, verticalOffset, findPeaksAndValleys, SNAP_RADIUS]);
 
+  const BOTTOM_PADDING = 18; // Space for time labels
+
   const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridColor = 'rgba(100, 100, 100, 0.4)';
     const subGridColor = 'rgba(60, 60, 60, 0.3)';
     const centerLineColor = 'rgba(150, 150, 150, 0.6)';
+    const gridHeight = height - BOTTOM_PADDING;
 
     ctx.strokeStyle = subGridColor;
     ctx.lineWidth = 0.5;
 
     // Sub-divisions (5 per division)
     const subDivX = width / (divisions * 5);
-    const subDivY = height / (divisions * 5);
+    const subDivY = gridHeight / (divisions * 5);
 
     for (let i = 0; i <= divisions * 5; i++) {
       ctx.beginPath();
       ctx.moveTo(i * subDivX, 0);
-      ctx.lineTo(i * subDivX, height);
+      ctx.lineTo(i * subDivX, gridHeight);
       ctx.stroke();
 
       ctx.beginPath();
@@ -172,12 +175,12 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     const divX = width / divisions;
-    const divY = height / divisions;
+    const divY = gridHeight / divisions;
 
     for (let i = 0; i <= divisions; i++) {
       ctx.beginPath();
       ctx.moveTo(i * divX, 0);
-      ctx.lineTo(i * divX, height);
+      ctx.lineTo(i * divX, gridHeight);
       ctx.stroke();
 
       ctx.beginPath();
@@ -192,17 +195,17 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
     ctx.beginPath();
     ctx.moveTo(width / 2, 0);
-    ctx.lineTo(width / 2, height);
+    ctx.lineTo(width / 2, gridHeight);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
+    ctx.moveTo(0, gridHeight / 2);
+    ctx.lineTo(width, gridHeight / 2);
     ctx.stroke();
 
-    // Time labels on vertical grid lines (white)
-    ctx.font = '9px monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    // Time labels on vertical grid lines (white) - below grid
+    ctx.font = '10px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     const totalTime = timePerDivision * divisions;
     for (let i = 0; i <= divisions; i++) {
       const x = i * divX;
@@ -244,14 +247,15 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   }, [divisions, timePerDivision, channel1Data.settings, channel2Data.settings]);
 
   const drawTriggerLevel = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const gridHeight = height - BOTTOM_PADDING;
     // Use trigger source channel for positioning
     const triggerChannelSettings = triggerSource === 'ch1' ? channel1Data.settings : channel2Data.settings;
     const triggerVoltsPerDiv = triggerChannelSettings.voltsPerDivision;
     const triggerVerticalOffset = triggerChannelSettings.verticalOffset;
     
     const voltsRange = triggerVoltsPerDiv * divisions;
-    const centerY = height / 2;
-    const pixelsPerVolt = height / voltsRange;
+    const centerY = gridHeight / 2;
+    const pixelsPerVolt = gridHeight / voltsRange;
     const triggerY = centerY - (triggerLevel + triggerVerticalOffset) * pixelsPerVolt;
 
     ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
@@ -292,7 +296,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.lineTo(20, triggerY + 4);
     }
     ctx.stroke();
-  }, [triggerLevel, channel1Data.settings, channel2Data.settings, triggerSource, divisions, triggerEdge]);
+  }, [triggerLevel, channel1Data.settings, channel2Data.settings, triggerSource, divisions, triggerEdge, BOTTOM_PADDING]);
 
   const drawWaveform = useCallback((
     ctx: CanvasRenderingContext2D, 
@@ -302,10 +306,11 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
   ) => {
     if (channelData.data.length === 0 || !channelData.settings.enabled) return;
 
+    const gridHeight = height - BOTTOM_PADDING;
     const { data: chData, settings, traceColor, glowColor } = channelData;
     const voltsRange = settings.voltsPerDivision * divisions;
-    const centerY = height / 2;
-    const pixelsPerVolt = height / voltsRange;
+    const centerY = gridHeight / 2;
+    const pixelsPerVolt = gridHeight / voltsRange;
     const pixelsPerPoint = width / chData.length;
 
     ctx.strokeStyle = traceColor;
@@ -332,11 +337,12 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
     ctx.stroke();
     ctx.shadowBlur = 0;
-  }, [divisions]);
+  }, [divisions, BOTTOM_PADDING]);
 
   const drawCursors = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!cursorSettings?.enabled) return;
 
+    const gridHeight = height - BOTTOM_PADDING;
     const timeCursorColor1 = hoveredCursor === 'x1' ? 'rgba(34, 211, 238, 1)' : 'rgba(34, 211, 238, 0.9)';
     const timeCursorColor2 = hoveredCursor === 'x2' ? 'rgba(34, 211, 238, 0.85)' : 'rgba(34, 211, 238, 0.6)';
     const voltCursorColor1 = hoveredCursor === 'y1' ? 'rgba(244, 114, 182, 1)' : 'rgba(244, 114, 182, 0.9)';
@@ -359,14 +365,14 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.lineWidth = hoveredCursor === 'x1' ? 2.5 : 1.5;
       ctx.beginPath();
       ctx.moveTo(x1, 0);
-      ctx.lineTo(x1, height);
+      ctx.lineTo(x1, gridHeight);
       ctx.stroke();
 
       ctx.strokeStyle = timeCursorColor2;
       ctx.lineWidth = hoveredCursor === 'x2' ? 2.5 : 1.5;
       ctx.beginPath();
       ctx.moveTo(x2, 0);
-      ctx.lineTo(x2, height);
+      ctx.lineTo(x2, gridHeight);
       ctx.stroke();
 
       // Drag handles
@@ -389,7 +395,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
       ctx.fillText(`T2: ${formatTime(t2)}`, x2 + 10, 40);
 
       // Delta T line (grey dashed horizontal line between cursors)
-      const deltaY = height * 0.85;
+      const deltaY = gridHeight * 0.85;
       ctx.strokeStyle = 'rgba(150, 150, 150, 0.8)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -434,15 +440,15 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
 
       // Delta shading
       ctx.fillStyle = 'rgba(34, 211, 238, 0.05)';
-      ctx.fillRect(Math.min(x1, x2), 0, Math.abs(x2 - x1), height);
+      ctx.fillRect(Math.min(x1, x2), 0, Math.abs(x2 - x1), gridHeight);
       
       ctx.setLineDash([4, 4]);
     }
 
     // Draw horizontal cursors (voltage)
     if (cursorSettings.showHorizontal) {
-      const y1 = cursorSettings.y1 * height;
-      const y2 = cursorSettings.y2 * height;
+      const y1 = cursorSettings.y1 * gridHeight;
+      const y2 = cursorSettings.y2 * gridHeight;
       const v1 = (0.5 - cursorSettings.y1) * voltsRange;
       const v2 = (0.5 - cursorSettings.y2) * voltsRange;
       const deltaV = Math.abs(v2 - v1);
@@ -526,7 +532,7 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     }
 
     ctx.setLineDash([]);
-  }, [cursorSettings, hoveredCursor, timePerDivision, divisions, voltsPerDivision]);
+  }, [cursorSettings, hoveredCursor, timePerDivision, divisions, voltsPerDivision, BOTTOM_PADDING]);
 
   const findCursorAtPosition = useCallback((mouseX: number, mouseY: number, width: number, height: number): DragTarget => {
     if (!cursorSettings?.enabled) return null;
