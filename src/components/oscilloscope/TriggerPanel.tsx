@@ -95,7 +95,7 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
       </div>
 
       {/* Mode and Holdoff Row */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Mode</Label>
           <div className="grid grid-cols-3 gap-1">
@@ -104,7 +104,7 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
                 key={mode}
                 variant={triggerSettings.mode === mode ? 'default' : 'outline'}
                 size="sm"
-                className="text-xs capitalize h-8 px-1"
+                className="text-[10px] capitalize h-7 px-2"
                 onClick={() => onTriggerSettingsChange({ ...triggerSettings, mode })}
               >
                 {mode}
@@ -120,7 +120,7 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
               onTriggerSettingsChange({ ...triggerSettings, holdoff: parseFloat(value) })
             }
           >
-            <SelectTrigger className="w-full h-8">
+            <SelectTrigger className="w-20 h-7 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
