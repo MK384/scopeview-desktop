@@ -60,7 +60,7 @@ const Index = () => {
       {/* Main Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 flex-1 min-h-0">
         {/* Waveform Display Area */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <StatusBar
             isRunning={isRunning}
             sampleRate={timebaseSettings.sampleRate}
@@ -70,7 +70,7 @@ const Index = () => {
             isTriggered={isTriggered}
           />
           
-          <div className="aspect-[16/9] min-h-[400px]">
+          <div className="w-full aspect-[16/9] min-h-[400px]">
             <WaveformCanvas
               channel1Data={{
                 data: waveformDataCh1,
