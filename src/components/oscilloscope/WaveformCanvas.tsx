@@ -144,8 +144,10 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     return normalizedY;
   }, [data, voltsPerDivision, divisions, verticalOffset, findPeaksAndValleys, SNAP_RADIUS]);
 
-  const BOTTOM_PADDING = 32; // Space for time labels (keeps labels away from rounded corners)
-
+  // Time labels need a small safe area so they don’t get clipped.
+  // Keep this roughly half of the previous 32px, but sized for the font metrics.
+  const TIME_LABEL_FONT_SIZE = 10;
+  const BOTTOM_PADDING = 20;
   const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const gridColor = 'rgba(100, 100, 100, 0.4)';
     const subGridColor = 'rgba(60, 60, 60, 0.3)';
@@ -203,12 +205,12 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     ctx.lineTo(width, gridHeight / 2);
     ctx.stroke();
 
-    // Time labels on vertical grid lines (white) - below grid
-    ctx.font = '10px monospace';
+    // Time labels on vertical grid lines (white) - drawn in a safe bottom inset
+    ctx.font = `${TIME_LABEL_FONT_SIZE}px monospace`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textBaseline = 'top';
-    const totalTime = timePerDivision * divisions;
-    const timeLabelY = gridHeight + 8;
+
+    const timeLabelY = gridHeight + 2; // keep labels comfortably away from the bottom edge
     const edgeInset = 18; // keep labels away from rounded corners
 
     for (let i = 0; i <= divisions; i++) {
@@ -223,7 +225,6 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     }
 
     ctx.textBaseline = 'alphabetic';
-
     // Voltage labels on horizontal grid lines (colored per channel)
     const ch1VoltsPerDiv = channel1Data.settings.voltsPerDivision;
     const ch2VoltsPerDiv = channel2Data.settings.voltsPerDivision;
@@ -633,15 +634,16 @@ export const WaveformCanvas: React.FC<WaveformCanvasProps> = ({
     const resizeCanvas = () => {
       const rect = container.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
-      
+
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.scale(dpr, dpr);
+        // Ensure the transform is always exactly the DPR scale (no accumulation).
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
     };
 
