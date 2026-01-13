@@ -102,13 +102,15 @@ export function useWaveformGenerator(
   const [isTriggered, setIsTriggered] = useState(false);
   const [triggerArmed, setTriggerArmed] = useState(true);
   
-  const phaseRef = useRef(0);
+  const phaseRefCh1 = useRef(0);
+  const phaseRefCh2 = useRef(0);
   const animationRef = useRef<number>();
   const lastTriggerTimeRef = useRef(0);
   const autoTriggerCounterRef = useRef(0);
   const frozenDataCh1Ref = useRef<number[]>([]);
   const frozenDataCh2Ref = useRef<number[]>([]);
-  const triggeredPhaseRef = useRef(0);
+  const triggeredPhaseCh1Ref = useRef(0);
+  const triggeredPhaseCh2Ref = useRef(0);
 
   // Generate raw waveform data at a given phase for a specific channel
   const generateWaveformAtPhase = useCallback((phase: number, waveformSettings: WaveformSettings): number[] => {
@@ -235,23 +237,40 @@ export function useWaveformGenerator(
 
     const animate = (timestamp: number) => {
       const { mode } = triggerSettings;
-      const triggerChannel = triggerSettings.source === 'ch1' ? channel1 : channel2;
-      const phaseIncrement = (2 * Math.PI * triggerChannel.waveformSettings.frequency) / 60; // 60 FPS
-      phaseRef.current += phaseIncrement;
       
-      if (phaseRef.current > 2 * Math.PI * 100) {
-        phaseRef.current -= 2 * Math.PI * 100;
+      // Each channel advances its own phase based on its own frequency
+      const phaseIncrementCh1 = (2 * Math.PI * channel1.waveformSettings.frequency) / 60; // 60 FPS
+      const phaseIncrementCh2 = (2 * Math.PI * channel2.waveformSettings.frequency) / 60;
+      
+      phaseRefCh1.current += phaseIncrementCh1;
+      phaseRefCh2.current += phaseIncrementCh2;
+      
+      if (phaseRefCh1.current > 2 * Math.PI * 100) {
+        phaseRefCh1.current -= 2 * Math.PI * 100;
+      }
+      if (phaseRefCh2.current > 2 * Math.PI * 100) {
+        phaseRefCh2.current -= 2 * Math.PI * 100;
       }
 
       if (shouldTrigger(timestamp)) {
-        const triggerPhaseOffset = findTriggerPhase(phaseRef.current);
+        const triggerPhaseOffset = findTriggerPhase(
+          triggerSettings.source === 'ch1' ? phaseRefCh1.current : phaseRefCh2.current
+        );
         
         if (triggerPhaseOffset !== null) {
-          // Found a valid trigger point
-          triggeredPhaseRef.current = phaseRef.current + triggerPhaseOffset;
+          // Apply the trigger offset to the trigger source channel's phase
+          if (triggerSettings.source === 'ch1') {
+            triggeredPhaseCh1Ref.current = phaseRefCh1.current + triggerPhaseOffset;
+            // Calculate where CH2 should be at this same moment in time
+            triggeredPhaseCh2Ref.current = phaseRefCh2.current + triggerPhaseOffset * (channel2.waveformSettings.frequency / channel1.waveformSettings.frequency);
+          } else {
+            triggeredPhaseCh2Ref.current = phaseRefCh2.current + triggerPhaseOffset;
+            // Calculate where CH1 should be at this same moment in time
+            triggeredPhaseCh1Ref.current = phaseRefCh1.current + triggerPhaseOffset * (channel1.waveformSettings.frequency / channel2.waveformSettings.frequency);
+          }
           
-          const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(triggeredPhaseRef.current, channel1.waveformSettings) : [];
-          const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(triggeredPhaseRef.current, channel2.waveformSettings) : [];
+          const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(triggeredPhaseCh1Ref.current, channel1.waveformSettings) : [];
+          const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(triggeredPhaseCh2Ref.current, channel2.waveformSettings) : [];
           
           frozenDataCh1Ref.current = newDataCh1;
           frozenDataCh2Ref.current = newDataCh2;
@@ -270,8 +289,8 @@ export function useWaveformGenerator(
           // Auto mode: trigger anyway after timeout
           autoTriggerCounterRef.current++;
           if (autoTriggerCounterRef.current > 30) { // ~0.5 second at 60fps
-            const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(phaseRef.current, channel1.waveformSettings) : [];
-            const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(phaseRef.current, channel2.waveformSettings) : [];
+            const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(phaseRefCh1.current, channel1.waveformSettings) : [];
+            const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(phaseRefCh2.current, channel2.waveformSettings) : [];
             setWaveformDataCh1(newDataCh1);
             setWaveformDataCh2(newDataCh2);
             setIsTriggered(false);
@@ -310,8 +329,10 @@ export function useWaveformGenerator(
   }, [isRunning]);
 
   const resetPhase = useCallback(() => {
-    phaseRef.current = 0;
-    triggeredPhaseRef.current = 0;
+    phaseRefCh1.current = 0;
+    phaseRefCh2.current = 0;
+    triggeredPhaseCh1Ref.current = 0;
+    triggeredPhaseCh2Ref.current = 0;
     lastTriggerTimeRef.current = 0;
     autoTriggerCounterRef.current = 0;
     frozenDataCh1Ref.current = [];
