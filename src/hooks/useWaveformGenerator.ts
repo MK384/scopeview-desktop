@@ -188,16 +188,17 @@ export function useWaveformGenerator(
     // For other waveforms, sample and find crossing
     const testData = generateWaveformAtPhase(currentPhase, triggerChannel.waveformSettings);
     const totalPoints = testData.length;
-    
-    for (let i = 1; i < Math.min(totalPoints / 2, 200); i++) {
+
+    // Scan the full capture window so low-frequency signals can still trigger reliably.
+    for (let i = 1; i < totalPoints; i++) {
       const prev = testData[i - 1];
       const curr = testData[i];
-      
+
       const risingCross = edge === 'rising' && prev < level && curr >= level;
       const fallingCross = edge === 'falling' && prev > level && curr <= level;
-      
+
       if (risingCross || fallingCross) {
-        // Return a small phase offset to center trigger point
+        // Return the phase offset needed to shift this crossing to the left edge of the capture
         const { timePerDivision } = timebaseSettings;
         const totalTime = timePerDivision * divisions;
         const timeStep = totalTime / totalPoints;
@@ -258,16 +259,19 @@ export function useWaveformGenerator(
         );
         
         if (triggerPhaseOffset !== null) {
-          // Apply the trigger offset to the trigger source channel's phase
-          if (triggerSettings.source === 'ch1') {
-            triggeredPhaseCh1Ref.current = phaseRefCh1.current + triggerPhaseOffset;
-            // Calculate where CH2 should be at this same moment in time
-            triggeredPhaseCh2Ref.current = phaseRefCh2.current + triggerPhaseOffset * (channel2.waveformSettings.frequency / channel1.waveformSettings.frequency);
-          } else {
-            triggeredPhaseCh2Ref.current = phaseRefCh2.current + triggerPhaseOffset;
-            // Calculate where CH1 should be at this same moment in time
-            triggeredPhaseCh1Ref.current = phaseRefCh1.current + triggerPhaseOffset * (channel1.waveformSettings.frequency / channel2.waveformSettings.frequency);
-          }
+          // Convert the phase offset (radians at trigger channel frequency) into a time shift (seconds)
+          const triggerFreq =
+            triggerSettings.source === 'ch1'
+              ? channel1.waveformSettings.frequency
+              : channel2.waveformSettings.frequency;
+          const omegaTrigger = 2 * Math.PI * Math.max(triggerFreq, 1e-6);
+          const dt = triggerPhaseOffset / omegaTrigger;
+
+          // Apply the same time shift to both channels so the display stays synchronized
+          triggeredPhaseCh1Ref.current =
+            phaseRefCh1.current + dt * (2 * Math.PI * channel1.waveformSettings.frequency);
+          triggeredPhaseCh2Ref.current =
+            phaseRefCh2.current + dt * (2 * Math.PI * channel2.waveformSettings.frequency);
           
           const newDataCh1 = channel1.enabled ? generateWaveformAtPhase(triggeredPhaseCh1Ref.current, channel1.waveformSettings) : [];
           const newDataCh2 = channel2.enabled ? generateWaveformAtPhase(triggeredPhaseCh2Ref.current, channel2.waveformSettings) : [];
