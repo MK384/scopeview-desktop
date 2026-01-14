@@ -159,11 +159,12 @@ export function useWaveformGenerator(
     return data;
   }, [timebaseSettings, divisions, pointsPerDivision]);
 
-  // Find trigger point in the data - returns the phase offset to align trigger
-  const findTriggerPhase = useCallback((currentPhase: number): number | null => {
+  // Find trigger point in the data - returns a TIME OFFSET (in seconds) to align trigger
+  const findTriggerTimeOffset = useCallback((currentPhase: number): number | null => {
     const triggerChannel = triggerSettings.source === 'ch1' ? channel1 : channel2;
     const { frequency, amplitude, offset, waveformType } = triggerChannel.waveformSettings;
     const { level, edge } = triggerSettings;
+    const angularFreq = 2 * Math.PI * Math.max(frequency, 1e-6);
     
     // For sine wave, we can calculate the exact phase for the trigger level
     if (waveformType === 'sine') {
@@ -179,15 +180,23 @@ export function useWaveformGenerator(
         
         // Align to trigger phase
         const currentCyclePhase = currentPhase % (2 * Math.PI);
-        const phaseOffset = triggerPhase - currentCyclePhase;
+        let phaseOffset = triggerPhase - currentCyclePhase;
         
-        return phaseOffset;
+        // Normalize to [-π, π]
+        while (phaseOffset > Math.PI) phaseOffset -= 2 * Math.PI;
+        while (phaseOffset < -Math.PI) phaseOffset += 2 * Math.PI;
+        
+        // Convert phase offset to time offset
+        return phaseOffset / angularFreq;
       }
     }
     
     // For other waveforms, sample and find crossing
     const testData = generateWaveformAtPhase(currentPhase, triggerChannel.waveformSettings);
     const totalPoints = testData.length;
+    const { timePerDivision } = timebaseSettings;
+    const totalTime = timePerDivision * divisions;
+    const timeStep = totalTime / totalPoints;
 
     // Scan the full capture window so low-frequency signals can still trigger reliably.
     for (let i = 1; i < totalPoints; i++) {
@@ -198,13 +207,9 @@ export function useWaveformGenerator(
       const fallingCross = edge === 'falling' && prev > level && curr <= level;
 
       if (risingCross || fallingCross) {
-        // Return the phase offset needed to shift this crossing to the left edge of the capture
-        const { timePerDivision } = timebaseSettings;
-        const totalTime = timePerDivision * divisions;
-        const timeStep = totalTime / totalPoints;
+        // Return the TIME offset needed to shift this crossing to the left edge of the capture
         const triggerTime = i * timeStep;
-        const angularFreq = 2 * Math.PI * frequency;
-        return -triggerTime * angularFreq;
+        return -triggerTime;
       }
     }
     
@@ -254,20 +259,14 @@ export function useWaveformGenerator(
       }
 
       if (shouldTrigger(timestamp)) {
-        const triggerPhaseOffset = findTriggerPhase(
+        // Get time offset (in seconds) to align trigger crossing to left edge
+        const dt = findTriggerTimeOffset(
           triggerSettings.source === 'ch1' ? phaseRefCh1.current : phaseRefCh2.current
         );
         
-        if (triggerPhaseOffset !== null) {
-          // Convert the phase offset (radians at trigger channel frequency) into a time shift (seconds)
-          const triggerFreq =
-            triggerSettings.source === 'ch1'
-              ? channel1.waveformSettings.frequency
-              : channel2.waveformSettings.frequency;
-          const omegaTrigger = 2 * Math.PI * Math.max(triggerFreq, 1e-6);
-          const dt = triggerPhaseOffset / omegaTrigger;
-
+        if (dt !== null) {
           // Apply the same time shift to both channels so the display stays synchronized
+          // phase = omega * t, so phase_offset = omega * dt
           triggeredPhaseCh1Ref.current =
             phaseRefCh1.current + dt * (2 * Math.PI * channel1.waveformSettings.frequency);
           triggeredPhaseCh2Ref.current =
@@ -322,7 +321,7 @@ export function useWaveformGenerator(
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isRunning, channel1, channel2, triggerSettings, shouldTrigger, findTriggerPhase, generateWaveformAtPhase]);
+  }, [isRunning, channel1, channel2, triggerSettings, shouldTrigger, findTriggerTimeOffset, generateWaveformAtPhase]);
 
   const toggleRunning = useCallback(() => {
     setIsRunning(prev => !prev);
