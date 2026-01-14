@@ -70,7 +70,7 @@ const Index = () => {
             isTriggered={isTriggered}
           />
           
-          <div className="w-full h-full min-h-[400px]">
+          <div className="w-full aspect-[16/9] min-h-[400px]">
             <WaveformCanvas
               channel1Data={{
                 data: waveformDataCh1,
