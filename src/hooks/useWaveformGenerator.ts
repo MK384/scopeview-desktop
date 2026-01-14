@@ -207,9 +207,11 @@ export function useWaveformGenerator(
       const fallingCross = edge === 'falling' && prev > level && curr <= level;
 
       if (risingCross || fallingCross) {
-        // Return the TIME offset needed to shift this crossing to the left edge of the capture
+        // Return the TIME offset needed to shift this crossing to the left edge of the capture.
+        // If the crossing occurs at +triggerTime within the current capture, we want the new
+        // capture to start at that point → advance the phase by +triggerTime.
         const triggerTime = i * timeStep;
-        return -triggerTime;
+        return triggerTime;
       }
     }
     
