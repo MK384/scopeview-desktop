@@ -56,29 +56,7 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-accent uppercase tracking-wide">Trigger</h3>
-          <div className="flex gap-1">
-            <Button
-              variant={triggerSettings.source === 'ch1' ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs h-6 px-2"
-              onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch1' })}
-              disabled={!channel1.enabled}
-            >
-              CH1
-            </Button>
-            <Button
-              variant={triggerSettings.source === 'ch2' ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs h-6 px-2"
-              onClick={() => onTriggerSettingsChange({ ...triggerSettings, source: 'ch2' })}
-              disabled={!channel2.enabled}
-            >
-              CH2
-            </Button>
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold text-accent uppercase tracking-wide">Trigger</h3>
         <div className="flex items-center gap-2">
           <span 
             className={`w-2 h-2 rounded-full ${
@@ -93,6 +71,33 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
             {isTriggered ? 'Trig\'d' : triggerArmed ? 'Armed' : 'Stopped'}
           </span>
         </div>
+      </div>
+
+      {/* Source Selection */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Source</Label>
+        <Tabs 
+          value={triggerSettings.source} 
+          onValueChange={(value) => onTriggerSettingsChange({ ...triggerSettings, source: value as TriggerSource })}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger 
+              value="ch1" 
+              className="text-xs data-[state=active]:text-primary"
+              disabled={!channel1.enabled}
+            >
+              CH1
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ch2" 
+              className="text-xs data-[state=active]:text-trace-ch2"
+              disabled={!channel2.enabled}
+            >
+              CH2
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Mode and Holdoff Row */}
