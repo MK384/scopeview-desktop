@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Crosshair } from 'lucide-react';
 import type { TriggerSettings, TriggerMode, TriggerSource, ChannelSettings } from '@/hooks/useWaveformGenerator';
 
@@ -98,19 +99,23 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
       <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Mode</Label>
-          <div className="grid grid-cols-3 gap-1">
-            {(['auto', 'normal', 'single'] as TriggerMode[]).map((mode) => (
-              <Button
-                key={mode}
-                variant={triggerSettings.mode === mode ? 'default' : 'outline'}
-                size="sm"
-                className="text-[10px] capitalize h-7 px-2"
-                onClick={() => onTriggerSettingsChange({ ...triggerSettings, mode })}
-              >
-                {mode}
-              </Button>
-            ))}
-          </div>
+          <Tabs 
+            value={triggerSettings.mode} 
+            onValueChange={(value) => onTriggerSettingsChange({ ...triggerSettings, mode: value as TriggerMode })}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="auto" className="text-[10px] capitalize">
+                Auto
+              </TabsTrigger>
+              <TabsTrigger value="normal" className="text-[10px] capitalize">
+                Normal
+              </TabsTrigger>
+              <TabsTrigger value="single" className="text-[10px] capitalize">
+                Single
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Holdoff</Label>
