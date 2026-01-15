@@ -60,7 +60,7 @@ const Index = () => {
       {/* Main Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 flex-1 min-h-0">
         {/* Waveform Display Area */}
-        <div className="flex flex-col gap-4 min-w-0 min-h-0">
+        <div className="grid min-w-0 min-h-0 gap-4 grid-rows-[auto_minmax(0,1fr)_auto]">
           <StatusBar
             isRunning={isRunning}
             sampleRate={timebaseSettings.sampleRate}
@@ -69,31 +69,33 @@ const Index = () => {
             triggerMode={triggerSettings.mode}
             isTriggered={isTriggered}
           />
-          
-          <div className="w-full flex-1 min-h-[300px] max-h-[calc(100vh-320px)]">
-            <WaveformCanvas
-              channel1Data={{
-                data: waveformDataCh1,
-                settings: channel1,
-                traceColor: CH1_TRACE_COLOR,
-                glowColor: CH1_GLOW_COLOR,
-              }}
-              channel2Data={{
-                data: waveformDataCh2,
-                settings: channel2,
-                traceColor: CH2_TRACE_COLOR,
-                glowColor: CH2_GLOW_COLOR,
-              }}
-              divisions={DIVISIONS}
-              triggerLevel={triggerSettings.level}
-              showGrid={true}
-              showTrigger={true}
-              cursorSettings={cursorSettings}
-              onCursorChange={setCursorSettings}
-              timePerDivision={timebaseSettings.timePerDivision}
-              triggerEdge={triggerSettings.edge}
-              triggerSource={triggerSettings.source}
-            />
+
+          <div className="w-full min-w-0 min-h-0">
+            <div className="h-full w-full min-h-[320px]">
+              <WaveformCanvas
+                channel1Data={{
+                  data: waveformDataCh1,
+                  settings: channel1,
+                  traceColor: CH1_TRACE_COLOR,
+                  glowColor: CH1_GLOW_COLOR,
+                }}
+                channel2Data={{
+                  data: waveformDataCh2,
+                  settings: channel2,
+                  traceColor: CH2_TRACE_COLOR,
+                  glowColor: CH2_GLOW_COLOR,
+                }}
+                divisions={DIVISIONS}
+                triggerLevel={triggerSettings.level}
+                showGrid={true}
+                showTrigger={true}
+                cursorSettings={cursorSettings}
+                onCursorChange={setCursorSettings}
+                timePerDivision={timebaseSettings.timePerDivision}
+                triggerEdge={triggerSettings.edge}
+                triggerSource={triggerSettings.source}
+              />
+            </div>
           </div>
 
           <MeasurementPanel
