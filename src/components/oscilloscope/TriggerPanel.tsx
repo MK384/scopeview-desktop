@@ -109,14 +109,14 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
             onValueChange={(value) => onTriggerSettingsChange({ ...triggerSettings, mode: value as TriggerMode })}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="auto" className="text-[10px] capitalize">
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="auto" className="text-[10px] capitalize h-7">
                 Auto
               </TabsTrigger>
-              <TabsTrigger value="normal" className="text-[10px] capitalize">
+              <TabsTrigger value="normal" className="text-[10px] capitalize h-7">
                 Normal
               </TabsTrigger>
-              <TabsTrigger value="single" className="text-[10px] capitalize">
+              <TabsTrigger value="single" className="text-[10px] capitalize h-7">
                 Single
               </TabsTrigger>
             </TabsList>
@@ -130,7 +130,7 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
               onTriggerSettingsChange({ ...triggerSettings, holdoff: parseFloat(value) })
             }
           >
-            <SelectTrigger className="w-20 h-7 text-xs">
+            <SelectTrigger className="w-20 h-9 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
