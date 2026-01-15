@@ -145,31 +145,37 @@ export const TriggerPanel: React.FC<TriggerPanelProps> = ({
       </div>
 
       {/* Level and Edge Row */}
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Level & Edge</Label>
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <div className="relative">
-              <Input
-                type="number"
-                value={triggerSettings.level}
-                onChange={handleLevelChange}
-                step={0.1}
-                className="pr-8"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                V
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">↘</span>
-            <Switch
-              checked={triggerSettings.edge === 'rising'}
-              onCheckedChange={handleEdgeToggle}
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Level</Label>
+          <div className="relative">
+            <Input
+              type="number"
+              value={triggerSettings.level}
+              onChange={handleLevelChange}
+              step={0.1}
+              className="pr-8 h-9"
             />
-            <span className="text-xs text-muted-foreground">↗</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              V
+            </span>
           </div>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Edge</Label>
+          <Tabs 
+            value={triggerSettings.edge} 
+            onValueChange={(value) => onTriggerSettingsChange({ ...triggerSettings, edge: value as 'rising' | 'falling' })}
+          >
+            <TabsList className="grid grid-cols-2 h-9">
+              <TabsTrigger value="falling" className="text-xs h-7 px-3">
+                ↘
+              </TabsTrigger>
+              <TabsTrigger value="rising" className="text-xs h-7 px-3">
+                ↗
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
